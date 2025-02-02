@@ -74,13 +74,13 @@ jobs:
           cmake --build . --target plugify-module-v8 --config ${{ env.BUILD_TYPE }} -- /m
 
       - name: Clean build directory
-	    shell: pwsh
+        shell: pwsh
         run: |
           New-Item -ItemType Directory -Path build\output\bin -Force
           Move-Item -Path build\${{ env.BUILD_TYPE }}\plugify-module-v8.dll -Destination build\output\bin
           Move-Item -Path build\plugify-module-v8.pmodule -Destination build\output
           $LIB_PATH = (Get-Item -Path 'build\lib' -Force).Target
-		  Move-Item -Path $LIB_PATH -Destination build\output
+          Move-Item -Path $LIB_PATH -Destination build\output
 
       - uses: actions/upload-artifact@v4
         with:
@@ -119,7 +119,7 @@ jobs:
           mkdir -p build/output/bin
           mv build/libplugify-module-v8.so build/output/bin
           mv build/plugify-module-v8.pmodule build/output
-		  mv "$(readlink -f build/lib)" build/output
+          mv "$(readlink -f build/lib)" build/output
 
       - uses: actions/upload-artifact@v4
         with:
