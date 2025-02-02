@@ -1,0 +1,84 @@
+# JavaScript (V8) Language Module for Plugify
+
+API References
+--------------
+- [`assert`](src/builtin/assert.rs) Provides a set of assertion tests
+    - `assert.ok()` Checks if a value is true.
+    - `assert.equal()` Checks if two values are equal, using the equal operator (==).
+    - `assert.notEqual()` Checks if two values are not equal, using the not equal operator (!=)
+- [`buffer`](src/builtin/buffer.rs) To handle binary data
+  - TODO
+- [`console`](src/builtin/buffer.rs) Console object.
+    - `console.log()` Outputs a message to the console.
+    - `console.info()` Outputs a message to the console.
+    - `console.warn()` Outputs a message to the console.
+    - `console.error()` Outputs a message to the console.
+    - `console.debug()` Outputs a message to the console.
+- [`child_process`](src/builtin/child_process.rs) 	To run a child process
+  - TODO
+- [`cluster`](src/builtin/cluster.rs) To split a single Node process into multiple processes
+  - TODO
+- [`crypto`](src/builtin/crypto.rs) To handle OpenSSL cryptographic functions
+  - TODO
+- [`dgram`](src/builtin/dgram.rs) Provides implementation of UDP datagram sockets
+  - TODO
+- [`dns`](src/builtin/dns.rs) To do DNS lookups and name resolution functions
+  - TODO
+- [`events`](src/builtin/events.rs) To handle events
+  - TODO
+- [`fs`](src/builtin/fs.rs) To handle the file system  - `fs.rename()` rename the file.
+    - `fs.exists()`
+    - `fs.rmdir()` remove the dir.
+    - `fs.mkdir()` create the dir.
+    - `fs.stat()` get the stat of the given pathname.
+    - `fs.readdir()` read the directory.
+    - `fs.readFile()` read the file of the given pathname.
+    - `fs.writeFile()` write the file of the given pathname and bytes/string.
+    - `fs.appendFile()` append to the file of the given pathname and bytes/string.
+- [`http`](src/builtin/http.rs) To make Node.js act as an HTTP server
+  - TODO
+- [`https`](src/builtin/https.rs) To make Node.js act as an HTTPS server.
+  - TODO
+- [`net`](src/builtin/net.rs) To create servers and clients
+  - TODO
+- [`os`](src/builtin/os.rs) Provides information about the operation system
+    - `os.tmpdir()` Returns the operating system's default directory for temporary files.
+    - `os.homedir()` Returns the operating system's home directory.
+    - `os.endianness()` Returns the endianness of the CPU.
+    - `os.type()` Returns the name of the operating system.
+    - `os.platform()` Returns information about the operating system's platform.
+    - `os.arch()` Returns the operating system CPU architecture.
+- [`path`](src/builtin/path.rs) To handle file paths
+    - `path.normalize()` normalize the path string.
+    - `path.join()` Joins the specified paths into one.
+    - `path.resolve()` Resolves the specified paths into an absolute path.
+    - `path.isAbsolute()` return if a path is in absolute.
+    - `path.relative()` normalize the path string.
+    - `path.dirname()` return the directory name of the path.
+    - `path.basename()` return the basename of the path.
+    - `path.extname()` return the ext name.
+- [`querystring`](src/builtin/querystring.rs) To handle URL query strings
+  - TODO
+- [`readlin`](src/builtin/readlin.rs) To handle readable streams one line at the time
+  - TODO
+- [`stream`](src/builtin/stream.rs) To handle streaming data
+  - TODO
+- [`string_decoder`](src/builtin/string_decoder.rs) To decode buffer objects into strings
+  - TODO
+- [`timers`](src/builtin/timers.rs) To execute a function after a given number of milliseconds
+    - `timers.setTimeout()` Executes a given function after a given time (in milliseconds).
+    - `timers.clearTimeout()` Cancels a Timeout object.
+- [`tls`](src/builtin/tls.rs) To implement TLS and SSL protocols
+  - TODO
+- [`tty`](src/builtin/tty.rs) Provides classes used by a text terminal
+  - TODO
+- [`url`](src/builtin/url.rs) To parse URL strings
+  - TODO
+- [`util`](src/builtin/util.rs) To access utility functions
+  - TODO
+- [`v8`](src/builtin/v8.rs) To access information about V8 (the JavaScript engine)
+  - TODO
+- [`vm`](src/builtin/vm.rs) To compile JavaScript code in a virtual machine
+  - TODO
+- [`zlib`](src/builtin/zlib.rs) To compress or decompress files 
+  - TODO
