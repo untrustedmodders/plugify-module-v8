@@ -4278,7 +4278,7 @@ namespace v8lm {
 
 			fs::path refPath;
 			if (_moduleLoader->Search(dir, refModuleName, refPath)) {
-				std::string refName = refPath.filename();
+				std::string refName = refPath.filename().string();
 				if (refName.ends_with("package.json")) {
 					std::string package;
 					if (_moduleLoader->Load(refPath, package)) {
