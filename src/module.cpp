@@ -51,8 +51,8 @@ namespace v8lm {
  */
 
 	namespace {
-		std::unique_ptr<v8::Platform> platform = nullptr;
-		
+		[[maybe_unused]] std::unique_ptr<v8::Platform> platform = nullptr;
+
 		void ReplaceAll(std::string& str, const std::string& from, const std::string& to) {
 			size_t start_pos{};
 			while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
@@ -3124,7 +3124,7 @@ namespace v8lm {
 #pragma endregion ExternalCall
 
 	InitResult V8LanguageModule::Initialize(std::weak_ptr<IPlugifyProvider> provider, ModuleHandle module) {
-		if (!(_provider = provider.lock())) {
+		if (!((_provider = provider.lock()))) {
 			return ErrorData{ "Provider not exposed" };
 		}
 
@@ -3152,6 +3152,7 @@ namespace v8lm {
 		// at shutdown.
 		v8::V8::SetFlagsFromString("--expose_gc");
 #endif
+#ifndef V8LM_EXTERNAL
 		platform = v8::platform::NewDefaultPlatform();
 		if (!v8::V8::InitializeICUDefaultLocation(nullptr, fs::exists(icuDataPath, ec) ? icuDataPath.string().c_str() : nullptr)) {
 			return ErrorData{"Failed to initialize the ICU library bundled with V8"};
@@ -3161,7 +3162,7 @@ namespace v8lm {
 		if (!v8::V8::Initialize()) {
 			return ErrorData{ "Failed to initialize v8" };
 		}
-
+#endif
 		_allocator = std::unique_ptr<v8::ArrayBuffer::Allocator>(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
 
 		v8::Isolate::CreateParams params;
@@ -3301,9 +3302,11 @@ namespace v8lm {
 		_context.Reset();
 		_isolate->Dispose();
 		_allocator.reset();
+#ifndef V8LM_EXTERNAL
 		v8::V8::Dispose();
 		v8::V8::DisposePlatform();
 		platform.reset();
+#endif
 	}
 
 	void V8LanguageModule::OnUpdate(plugify::DateTime dt) {
@@ -3693,7 +3696,7 @@ namespace v8lm {
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
 				_isolate,
 				MakeString(plugin.GetName()),
-				{ exportNames.begin(), exportNames.end() },
+				exportNames,
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					auto _isolate = context->GetIsolate();
 					for (const auto& [name, func] : exportFuncs) {
@@ -3753,7 +3756,7 @@ namespace v8lm {
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
 				_isolate,
 				MakeString(plugin.GetName()),
-				{ exportNames.begin(), exportNames.end() },
+				exportNames,
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					auto _isolate = context->GetIsolate();
 					for (const auto& [name, func] : exportFuncs) {
@@ -3803,7 +3806,7 @@ namespace v8lm {
 			return module.ToLocalChecked();
 		} else {
 			v8::Local<v8::String> resourceName = MakeString(path.c_str());
-			v8::ScriptOrigin origin(resourceName);
+			v8::ScriptOrigin origin(_isolate, resourceName);
 			v8::Local<v8::String> source = MakeString(content);
 			v8::TryCatch tryCatch(_isolate);
 
@@ -3925,7 +3928,7 @@ namespace v8lm {
 			return;
 		}
 
-		v8::ScriptOrigin origin(info[2]);
+		v8::ScriptOrigin origin(_isolate, info[2]);
 		v8::Local<v8::String> source = info[0]->ToString(context).ToLocalChecked();
 
 		v8::MaybeLocal<v8::Script> script = v8::Script::Compile(context, source, &origin);
@@ -4235,7 +4238,7 @@ namespace v8lm {
 		constexpr bool isWarm = false;
 		constexpr bool isModule = true;
 		auto hostDefinedOptions = v8::Local<v8::PrimitiveArray>();
-		v8::ScriptOrigin origin(resourceName, lineOffset, columnOffset,
+		v8::ScriptOrigin origin(_isolate, resourceName, lineOffset, columnOffset,
 								isSharedCrossOrigin, scriptId, sourceMapUrl,
 								isOpaque, isWarm, isModule, hostDefinedOptions);
 		v8::ScriptCompiler::Source source(script, origin);
@@ -4344,7 +4347,7 @@ namespace v8lm {
 		v8::Local<v8::Module> syntheticModule = v8::Module::CreateSyntheticModule(
 				_isolate,
 				MakeString(moduleName),
-				{ exports.begin(), exports.end() },
+				exports,
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					v8::Isolate* isolate = context->GetIsolate();
 					auto* self = Get(isolate);
