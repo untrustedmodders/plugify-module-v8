@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.2...v1.0.3) (2025-02-02)
+
+
+### Bug Fixes
+
+* Add local v8 ([ab5954f](https://github.com/untrustedmodders/plugify-module-v8/commit/ab5954f9f512f0e6184d703a0b785de9c05af228))
+
 ## [1.0.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.1...v1.0.2) (2025-02-02)
 
 
