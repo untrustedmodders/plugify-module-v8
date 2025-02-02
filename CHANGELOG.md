@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.3...v1.0.4) (2025-02-02)
+
+
+### Bug Fixes
+
+* add symlink to lib ([37b0956](https://github.com/untrustedmodders/plugify-module-v8/commit/37b0956e3fe4b03c6deb01383487180d57efac2d))
+
 ## [1.0.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.2...v1.0.3) (2025-02-02)
 
 
