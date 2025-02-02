@@ -174,3 +174,13 @@ configure_file(
     ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pmodule.in
     ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pmodule
 )
+
+set(V8LM_GITHUB_ACTIONS "0" CACHE STRING "Build with github actions")
+
+if(V8LM_GITHUB_ACTIONS)
+    execute_process(COMMAND cmake -E create_symlink
+            "${CMAKE_SOURCE_DIR}/lib"
+            "${CMAKE_BINARY_DIR}/lib"
+    )
+endif()
+
