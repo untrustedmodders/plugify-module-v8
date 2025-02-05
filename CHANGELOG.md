@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.4...v1.0.5) (2025-02-05)
+
+
+### Bug Fixes
+
+* small refactor ([feaf8fd](https://github.com/untrustedmodders/plugify-module-v8/commit/feaf8fd4d01b3ef6d001eca1dd320ed213819c1f))
+
 ## [1.0.4](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.3...v1.0.4) (2025-02-02)
 
 
