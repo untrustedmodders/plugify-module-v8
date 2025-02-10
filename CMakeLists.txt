@@ -167,8 +167,10 @@ elseif(UNIX)
     target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/sym/version_script.lds")
 endif()
 
-set(V8LM_VERSION "${CMAKE_PROJECT_VERSION}")
-set(V8LM_PACKAGE "${PROJECT_NAME}")
+file(READ "${CMAKE_SOURCE_DIR}/version.txt" VERSION_FILE_CONTENTS)
+set(V8LM_VERSION "${CMAKE_PROJECT_VERSION}" CACHE STRING "Set version name")
+set(V8LM_PACKAGE "${PROJECT_NAME}" CACHE STRING "Set package name")
+string(REPLACE "v" "" V8LM_PACKAGE "${V8LM_PACKAGE}")
 
 configure_file(
     ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pmodule.in
