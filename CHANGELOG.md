@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.6](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.5...v1.0.6) (2025-03-09)
+
+
+### Bug Fixes
+
+* add version strip ([ea4a3c7](https://github.com/untrustedmodders/plugify-module-v8/commit/ea4a3c7ebdbd01bc5dfa5096d8b6d8bd8e184ea9))
+* remove deprecated methods ([71205b0](https://github.com/untrustedmodders/plugify-module-v8/commit/71205b04a6dba8c98ee86e129caf1ad05eb16597))
+* update plugify ([421c9de](https://github.com/untrustedmodders/plugify-module-v8/commit/421c9deaee7b024742ea5fc3558bc766918cebf3))
+* version ([0687b9a](https://github.com/untrustedmodders/plugify-module-v8/commit/0687b9a65af2a7893ec428be8b468327135c8e0a))
+
 ## [1.0.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.4...v1.0.5) (2025-02-05)
 
 
