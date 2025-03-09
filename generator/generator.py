@@ -507,7 +507,7 @@ def main(manifest_path: str, output_dir: str, override: bool):
         return 1
 
     plugin_name = os.path.basename(manifest_path).rsplit('.', 3)[0]
-    output_path = os.path.join(output_dir, f'{plugin_name}.t.js')
+    output_path = os.path.join(output_dir, f'{plugin_name}.d.ts')
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     if os.path.isfile(output_path) and not override:
