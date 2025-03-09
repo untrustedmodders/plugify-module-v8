@@ -3695,7 +3695,7 @@ namespace v8lm {
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
 				_isolate,
 				MakeString(plugin.GetName()),
-				exportNames,
+				v8::MemorySpan<const v8::Local<v8::String>>{ exportNames.begin(), exportNames.end() },
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					auto _isolate = context->GetIsolate();
 					for (const auto& [name, func] : exportFuncs) {
@@ -3755,7 +3755,7 @@ namespace v8lm {
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
 				_isolate,
 				MakeString(plugin.GetName()),
-				exportNames,
+				v8::MemorySpan<const v8::Local<v8::String>>{ exportNames.begin(), exportNames.end() },
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					auto _isolate = context->GetIsolate();
 					for (const auto& [name, func] : exportFuncs) {
@@ -4346,7 +4346,7 @@ namespace v8lm {
 		v8::Local<v8::Module> syntheticModule = v8::Module::CreateSyntheticModule(
 				_isolate,
 				MakeString(moduleName),
-				exports,
+				v8::MemorySpan<const v8::Local<v8::String>>{ exports.begin(), exports.end() },
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					v8::Isolate* isolate = context->GetIsolate();
 					auto* self = Get(isolate);
