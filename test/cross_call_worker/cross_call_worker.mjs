@@ -1,5 +1,5 @@
 import { Plugin, Vector2, Vector3, Vector4, Matrix4x4 } from 'plugify';
-import * as master from 'cross_call_master';
+import * as master from ':cross_call_master';
 
 const boolStr = (b) => {
     return typeof b === 'boolean' ? `${b}`.toLowerCase() : '<wrong value>';
