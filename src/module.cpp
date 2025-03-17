@@ -3407,6 +3407,9 @@ namespace v8lm {
 				CreateJsObject(desc.GetVersionName()),
 				CreateJsObject(desc.GetCreatedBy()),
 				CreateJsObject(plugin.GetBaseDir()),
+				CreateJsObject(plugin.GetConfigsDir()),
+				CreateJsObject(plugin.GetDataDir()),
+				CreateJsObject(plugin.GetLogsDir()),
 				CreateJsObjectList(deps)
 		};
 		v8::Local<v8::Object> pluginInstance;
