@@ -13,9 +13,22 @@
 		std::terminate();                                                                                                                                                       \
 	}
 
-#define UNUSED(func) [[maybe_unused]] auto _ = func
+#define CONCAT(a, b) CONCAT_INNER(a, b)
+#define CONCAT_INNER(a, b) a ## b
+#define UNIQUE(base) CONCAT(base, __COUNTER__)
+#define UNUSED(func) [[maybe_unused]] auto UNIQUE(_) = func
 
 using namespace plugify;
+
+#if V8LM_PLATFORM_WINDOWS
+#ifndef NOMINMAX
+#define NOMINMAX 1
+#endif
+#include <windows.h>
+#include <winhttp.h>
+#else
+#include <curl/curl.h>
+#endif
 
 namespace v8lm {
 #include "builtin/assert.hpp"
@@ -23,6 +36,7 @@ namespace v8lm {
 #include "builtin/crypto.hpp"
 #include "builtin/datagram.hpp"
 #include "builtin/dns.hpp"
+#include "builtin/fetch.hpp"
 #include "builtin/fs.hpp"
 #include "builtin/http.hpp"
 #include "builtin/https.hpp"
@@ -3146,6 +3160,10 @@ namespace v8lm {
 			return ErrorData{ "Failed to get plugins directory path" };
 		}
 
+		if (!builtin::fetch::Initialize()) {
+			return ErrorData{ "Failed to initialize fetch" };
+		}
+
 #ifndef NDEBUG
 		// Enables calling RequestGarbageCollectionForTesting to catch memory leaks
 		// at shutdown.
@@ -3211,6 +3229,9 @@ namespace v8lm {
 
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "console"),
 					modules->Get(context, v8::String::NewFromUtf8Literal(_isolate, "console")).ToLocalChecked()).Check();
+
+		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "fetch"),
+					v8::FunctionTemplate::New(_isolate, builtin::fetch::Fetch)->GetFunction(context).ToLocalChecked()).Check();
 
 		v8::Local<v8::Object> pps = v8::Object::New(_isolate);
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "pps"), pps).Check();
@@ -3306,6 +3327,7 @@ namespace v8lm {
 		v8::V8::DisposePlatform();
 		platform.reset();
 #endif
+		builtin::fetch::Terminate();
 	}
 
 	void V8LanguageModule::OnUpdate(plugify::DateTime dt) {

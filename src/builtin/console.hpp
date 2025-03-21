@@ -15,10 +15,10 @@ namespace builtin {
 			// Call JSON.stringify(obj, replacer, space)
 			v8::Local<v8::Value> replacer = v8::Number::New(isolate, 0);
 			v8::Local<v8::Value> space = v8::Number::New(isolate, 2);
-			v8::Local<v8::Value> args[] = { obj, replacer, space };
+			std::array args = { obj, replacer, space };
 
 			v8::Local<v8::Value> result;
-			if (stringify_func->Call(context, json_obj, 3, args).ToLocal(&result)) {
+			if (stringify_func->Call(context, json_obj, static_cast<int>(args.size()), args.data()).ToLocal(&result)) {
 				return result.As<v8::String>();
 			}
 
@@ -27,11 +27,16 @@ namespace builtin {
 		}
 
 		template<plugify::Severity severity>
-		void Log(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			v8::Isolate* isolate = info.GetIsolate();
+		void Log(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			v8::Isolate* isolate = args.GetIsolate();
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-			v8::Local<v8::Value> firstArg = info[0];
+			if (args.Length() < 1) {
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument"));
+				return;
+			}
+
+			v8::Local<v8::Value> firstArg = args[0];
 			v8::Local<v8::String> msg;
 
 			if (firstArg->IsString() || firstArg->IsFunction()) {
@@ -44,24 +49,24 @@ namespace builtin {
 			g_v8lm.GetProvider()->Log(std::string_view{*utf8, static_cast<size_t>(utf8.length())}, severity);
 		}
 
-		void ConsoleLog(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			Log<plugify::Severity::None>(info);
+		void ConsoleLog(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			Log<plugify::Severity::None>(args);
 		}
 
-		void ConsoleInfo(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			Log<plugify::Severity::Info>(info);
+		void ConsoleInfo(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			Log<plugify::Severity::Info>(args);
 		}
 
-		void ConsoleWarn(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			Log<plugify::Severity::Warning>(info);
+		void ConsoleWarn(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			Log<plugify::Severity::Warning>(args);
 		}
 
-		void ConsoleError(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			Log<plugify::Severity::Error>(info);
+		void ConsoleError(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			Log<plugify::Severity::Error>(args);
 		}
 
-		void ConsoleDebug(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			Log<plugify::Severity::Debug>(info);
+		void ConsoleDebug(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			Log<plugify::Severity::Debug>(args);
 		}
 
 		v8::Local<v8::Object> Init(v8::Isolate* isolate) {

@@ -6,10 +6,7 @@ namespace builtin {
 
 		for (int i = 0; i < args.Length(); i++) {
 			if (args[i]->IsString()) {
-				v8::String::Utf8Value utf8(isolate, args[i]);
-				if (*utf8) {
-					paths.emplace_back(std::string_view{ *utf8, static_cast<size_t>(utf8.length()) });
-				}
+				paths.emplace_back(ToStdPath(isolate, args[i]));
 			}
 		}
 		return paths;
@@ -25,10 +22,14 @@ namespace builtin {
 				return;
 			}
 
-			std::filesystem::path path = ToStdPath(isolate, args[0]);
+			try {
+				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-			std::string normalizedPath = std::filesystem::weakly_canonical(path).string();
-			args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, normalizedPath.c_str(), v8::NewStringType::kNormal, static_cast<int>(normalizedPath.size())).ToLocalChecked());
+				std::string normalizedPath = std::filesystem::weakly_canonical(path).string();
+				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, normalizedPath.c_str(), v8::NewStringType::kNormal, static_cast<int>(normalizedPath.size())).ToLocalChecked());
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
 
 		// Join: Concatenate multiple paths into one
@@ -42,8 +43,12 @@ namespace builtin {
 				result /= part;
 			}
 
-			std::string path = result.string();
-			args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, path.c_str(), v8::NewStringType::kNormal, static_cast<int>(path.size())).ToLocalChecked());
+			try {
+				std::string path = result.string();
+				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, path.c_str(), v8::NewStringType::kNormal, static_cast<int>(path.size())).ToLocalChecked());
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
 
 		// Resolve: Resolve paths into an absolute path
@@ -61,8 +66,12 @@ namespace builtin {
 				}
 			}
 
-			std::string path = std::filesystem::absolute(result).string();
-			args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, path.c_str(), v8::NewStringType::kNormal, static_cast<int>(path.size())).ToLocalChecked());
+			try {
+				std::string path = std::filesystem::absolute(result).string();
+				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, path.c_str(), v8::NewStringType::kNormal, static_cast<int>(path.size())).ToLocalChecked());
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
 
 		// IsAbsolute: Check if a path is absolute
@@ -74,12 +83,15 @@ namespace builtin {
 				return;
 			}
 
-			std::filesystem::path path = ToStdPath(isolate, args[0]);
+			try {
+				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-			bool isAbsolute = path.is_absolute();
-			args.GetReturnValue().Set(v8::Boolean::New(isolate, isAbsolute));
+				bool isAbsolute = path.is_absolute();
+				args.GetReturnValue().Set(v8::Boolean::New(isolate, isAbsolute));
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
-
 
 		// Relative: Get the relative path between two paths
 		void Relative(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -90,11 +102,15 @@ namespace builtin {
 				return;
 			}
 
-			std::filesystem::path fromPath = ToStdPath(isolate, args[0]);
-			std::filesystem::path toPath = ToStdPath(isolate, args[1]);
+			try {
+				std::filesystem::path fromPath = ToStdPath(isolate, args[0]);
+				std::filesystem::path toPath = ToStdPath(isolate, args[1]);
 
-			std::string relativePath = std::filesystem::relative(toPath, fromPath).string();
-			args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, relativePath.c_str(), v8::NewStringType::kNormal, static_cast<int>(relativePath.size())).ToLocalChecked());
+				std::string relativePath = std::filesystem::relative(toPath, fromPath).string();
+				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, relativePath.c_str(), v8::NewStringType::kNormal, static_cast<int>(relativePath.size())).ToLocalChecked());
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
 
 		// Dirname: Get the directory name of a path
@@ -106,10 +122,14 @@ namespace builtin {
 				return;
 			}
 
-			std::filesystem::path path = ToStdPath(isolate, args[0]);
+			try {
+				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-			std::string dirPath = path.parent_path().string();
-			args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, dirPath.c_str(), v8::NewStringType::kNormal, static_cast<int>(dirPath.size())).ToLocalChecked());
+				std::string dirPath = path.parent_path().string();
+				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, dirPath.c_str(), v8::NewStringType::kNormal, static_cast<int>(dirPath.size())).ToLocalChecked());
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
 
 		// Basename: Get the base name of a path
@@ -121,10 +141,14 @@ namespace builtin {
 				return;
 			}
 
-			std::filesystem::path path = ToStdPath(isolate, args[0]);
+			try {
+				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-			std::string baseName = path.filename().string();
-			args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, baseName.c_str(), v8::NewStringType::kNormal, static_cast<int>(baseName.size())).ToLocalChecked());
+				std::string baseName = path.filename().string();
+				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, baseName.c_str(), v8::NewStringType::kNormal, static_cast<int>(baseName.size())).ToLocalChecked());
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
 
 		// Extname: Get the file extension of a path
@@ -136,10 +160,14 @@ namespace builtin {
 				return;
 			}
 
-			std::filesystem::path path = ToStdPath(isolate, args[0]);
+			try {
+				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-			std::string extName = path.extension().string();
-			args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, extName.c_str(), v8::NewStringType::kNormal, static_cast<int>(extName.size())).ToLocalChecked());
+				std::string extName = path.extension().string();
+				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, extName.c_str(), v8::NewStringType::kNormal, static_cast<int>(extName.size())).ToLocalChecked());
+			} catch (const std::exception& e) {
+				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+			}
 		}
 
 		// Initialize the module and export functions

@@ -15,6 +15,8 @@
 #include <map>
 #include <exception>
 #include <source_location>
+#include <future>
+#include <stdexcept>
 
 #include <filesystem>
 namespace fs = std::filesystem;

@@ -1,12 +1,12 @@
 namespace builtin {
 	namespace timers {
-		void SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			auto* self = V8LanguageModule::Get(info.GetIsolate());
-			self->SetTimeout(info);
+		void SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			auto* self = V8LanguageModule::Get(args.GetIsolate());
+			self->SetTimeout(args);
 		}
-		void ClearTimeout(const v8::FunctionCallbackInfo<v8::Value>& info) {
-			auto* self = V8LanguageModule::Get(info.GetIsolate());
-			self->ClearTimeout(info);
+		void ClearTimeout(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			auto* self = V8LanguageModule::Get(args.GetIsolate());
+			self->ClearTimeout(args);
 		}
 
 		// Init function

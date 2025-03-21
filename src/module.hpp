@@ -184,7 +184,7 @@ namespace v8lm {
 		void ImportDynamic(const fs::path& path);
 		void CallTimeout(uint32_t id);
 
-				static void HandlePromiseRejectCallback(v8::PromiseRejectMessage message);
+		static void HandlePromiseRejectCallback(v8::PromiseRejectMessage message);
 		void RemovePendingFailedPromise(v8::Local<v8::Promise> promise);
 
 		void ThrowException(std::string_view error) const;

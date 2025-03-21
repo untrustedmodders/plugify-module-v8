@@ -62,15 +62,15 @@ namespace builtin {
 
 #if V8LM_ARCH_BITS == 64
 	#if V8LM_ARCH_ARM
-				char arch[] = "arm64";
+			char arch[] = "arm64";
 	#else
-				char arch[] = "x64";
+			char arch[] = "x64";
 	#endif
 #elif V8LM_ARCH_BITS == 32
 	#if V8LM_ARCH_ARM
-				char arch[] = "arm";
+			char arch[] = "arm";
 	#else
-				char arch[] = "x86";
+			char arch[] = "x86";
 	#endif
 #endif
 

@@ -12,7 +12,12 @@ namespace builtin {
 		// assert function
 		void AssertFn(const v8::FunctionCallbackInfo<v8::Value>& args) {
 			v8::Isolate* isolate = args.GetIsolate();
-			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+			if (args.Length() < 2 || !args[0]->IsBoolean() || !args[1]->IsString()) {
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Boolean and string argument is required"));
+				return;
+			}
 
 			bool expr = args[0]->BooleanValue(isolate);
 			std::string message = ToStdString(isolate, args[1]);
@@ -23,7 +28,12 @@ namespace builtin {
 		// assert_eq function
 		void AssertEqFn(const v8::FunctionCallbackInfo<v8::Value>& args) {
 			v8::Isolate* isolate = args.GetIsolate();
-			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+			if (args.Length() < 2 || !args[0]->IsString() || !args[1]->IsString()) {
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Two string argument is required"));
+				return;
+			}
 
 			std::string expect = ToStdString(isolate, args[0]);
 			std::string actual = ToStdString(isolate, args[1]);
@@ -34,7 +44,12 @@ namespace builtin {
 		// assert_neq function
 		void AssertNeqFn(const v8::FunctionCallbackInfo<v8::Value>& args) {
 			v8::Isolate* isolate = args.GetIsolate();
-			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+			if (args.Length() < 2 || !args[0]->IsString() || !args[1]->IsString()) {
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Two string argument is required"));
+				return;
+			}
 
 			std::string expect = ToStdString(isolate, args[0]);
 			std::string actual = ToStdString(isolate, args[1]);
