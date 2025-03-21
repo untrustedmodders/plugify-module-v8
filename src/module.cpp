@@ -13,6 +13,13 @@
 		std::terminate();                                                                                                                                                       \
 	}
 
+#define ASSERT_MSG(cond, msg)                                                                                                                                                   \
+	if (!(cond)) [[unlikely]] {                                                                                                                                                 \
+		constexpr std::source_location location = std::source_location::current();                                                                                              \
+		std::puts(std::format("Assertion failed on {} ({}:{}) `{}`: {}\n", location.file_name(), location.line(), location.column(), location.function_name(), msg).c_str());   \
+		std::terminate();                                                                                                                                                       \
+	}
+
 #define CONCAT(a, b) CONCAT_INNER(a, b)
 #define CONCAT_INNER(a, b) a ## b
 #define UNIQUE(base) CONCAT(base, __COUNTER__)

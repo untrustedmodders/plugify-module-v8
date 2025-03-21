@@ -32,7 +32,7 @@ namespace builtin {
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 1) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: message"));
 				return;
 			}
 
@@ -46,7 +46,9 @@ namespace builtin {
 			}
 
 			v8::String::Utf8Value utf8(isolate, msg);
-			g_v8lm.GetProvider()->Log(std::string_view{*utf8, static_cast<size_t>(utf8.length())}, severity);
+			if (*utf8) {
+				g_v8lm.GetProvider()->Log(std::string_view{*utf8, static_cast<size_t>(utf8.length())}, severity);
+			}
 		}
 
 		void ConsoleLog(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -77,27 +79,27 @@ namespace builtin {
 			console->Set(context,
 						 v8::String::NewFromUtf8Literal(isolate, "log"),
 						 v8::FunctionTemplate::New(isolate, ConsoleLog)->GetFunction(context).ToLocalChecked()
-								 ).Check();
+						 ).Check();
 
 			console->Set(context,
 						 v8::String::NewFromUtf8Literal(isolate, "info"),
 						 v8::FunctionTemplate::New(isolate, ConsoleInfo)->GetFunction(context).ToLocalChecked()
-								 ).Check();
+						).Check();
 
 			console->Set(context,
 						 v8::String::NewFromUtf8Literal(isolate, "warn"),
 						 v8::FunctionTemplate::New(isolate, ConsoleWarn)->GetFunction(context).ToLocalChecked()
-								 ).Check();
+						).Check();
 
 			console->Set(context,
 						 v8::String::NewFromUtf8Literal(isolate, "error"),
 						 v8::FunctionTemplate::New(isolate, ConsoleError)->GetFunction(context).ToLocalChecked()
-								 ).Check();
+						).Check();
 
 			console->Set(context,
 						 v8::String::NewFromUtf8Literal(isolate, "debug"),
 						 v8::FunctionTemplate::New(isolate, ConsoleDebug)->GetFunction(context).ToLocalChecked()
-								 ).Check();
+						).Check();
 
 			return console;
 		}

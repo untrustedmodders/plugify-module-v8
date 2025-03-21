@@ -5,7 +5,7 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			try {
-				std::string tmpDir = std::filesystem::temp_directory_path().string();
+				const auto& tmpDir = std::filesystem::temp_directory_path().native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, tmpDir.c_str(), v8::NewStringType::kNormal, static_cast<int>(tmpDir.size())).ToLocalChecked());
 			} catch (...) {
 				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Unable to retrieve temp directory"));
@@ -83,34 +83,34 @@ namespace builtin {
 			v8::Local<v8::Object> exports = v8::Object::New(isolate);
 			
 			exports->Set(context,
-					v8::String::NewFromUtf8Literal(isolate, "tmpdir"),
-					v8::FunctionTemplate::New(isolate, Tmpdir)->GetFunction(context).ToLocalChecked()
-						 ).Check();
+						v8::String::NewFromUtf8Literal(isolate, "tmpdir"),
+						v8::FunctionTemplate::New(isolate, Tmpdir)->GetFunction(context).ToLocalChecked()
+						).Check();
 
 			exports->Set(context,
-					v8::String::NewFromUtf8Literal(isolate, "homedir"),
-					v8::FunctionTemplate::New(isolate, Homedir)->GetFunction(context).ToLocalChecked()
-						 ).Check();
+						v8::String::NewFromUtf8Literal(isolate, "homedir"),
+						v8::FunctionTemplate::New(isolate, Homedir)->GetFunction(context).ToLocalChecked()
+						).Check();
 
 			exports->Set(context,
 					v8::String::NewFromUtf8Literal(isolate, "endianness"),
-					v8::FunctionTemplate::New(isolate, Endianness)->GetFunction(context).ToLocalChecked()
-						 ).Check();
+						v8::FunctionTemplate::New(isolate, Endianness)->GetFunction(context).ToLocalChecked()
+						).Check();
 
 			exports->Set(context,
-					v8::String::NewFromUtf8Literal(isolate, "type"),
-					v8::FunctionTemplate::New(isolate, OSType)->GetFunction(context).ToLocalChecked()
-						 ).Check();
+						v8::String::NewFromUtf8Literal(isolate, "type"),
+						v8::FunctionTemplate::New(isolate, OSType)->GetFunction(context).ToLocalChecked()
+						).Check();
 
 			exports->Set(context,
-					v8::String::NewFromUtf8Literal(isolate, "platform"),
-					v8::FunctionTemplate::New(isolate, Platform)->GetFunction(context).ToLocalChecked()
-						 ).Check();
+						v8::String::NewFromUtf8Literal(isolate, "platform"),
+						v8::FunctionTemplate::New(isolate, Platform)->GetFunction(context).ToLocalChecked()
+						).Check();
 
 			exports->Set(context,
-					v8::String::NewFromUtf8Literal(isolate, "arch"),
-					v8::FunctionTemplate::New(isolate, Arch)->GetFunction(context).ToLocalChecked()
-						 ).Check();
+						v8::String::NewFromUtf8Literal(isolate, "arch"),
+						v8::FunctionTemplate::New(isolate, Arch)->GetFunction(context).ToLocalChecked()
+						).Check();
 			
 			return exports;
 		}

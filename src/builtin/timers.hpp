@@ -18,12 +18,12 @@ namespace builtin {
 			exports->Set(context,
 						 v8::String::NewFromUtf8Literal(isolate, "setTimeout"),
 						 v8::FunctionTemplate::New(isolate, SetTimeout)->GetFunction(context).ToLocalChecked()
-								 ).Check();
+						 ).Check();
 
 			exports->Set(context,
 						 v8::String::NewFromUtf8Literal(isolate, "clearTimeout"),
 						 v8::FunctionTemplate::New(isolate, ClearTimeout)->GetFunction(context).ToLocalChecked()
-								 ).Check();
+						 ).Check();
 
 			return exports;
 		}

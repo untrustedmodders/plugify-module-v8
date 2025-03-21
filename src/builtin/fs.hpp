@@ -38,7 +38,7 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
@@ -55,7 +55,7 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 2 || !args[0]->IsString() || !args[1]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Two path arguments are required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 2 arguments: oldpath and newpath"));
 				return;
 			}
 
@@ -79,7 +79,7 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
@@ -96,7 +96,7 @@ namespace builtin {
 		void MkdirSync(const v8::FunctionCallbackInfo<v8::Value>& args) {
 			v8::Isolate* isolate = args.GetIsolate();
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 			try {
@@ -114,7 +114,7 @@ namespace builtin {
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
@@ -232,7 +232,7 @@ namespace builtin {
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
@@ -242,7 +242,7 @@ namespace builtin {
 
 				size_t i = static_cast<size_t>(-1);
 				for (const auto& entry : std::filesystem::directory_iterator(path)) {
-					std::string res = entry.path().string();
+					const auto& res = entry.path().native();
 					array->Set(context,
 							   ++i,
 							   v8::String::NewFromUtf8(isolate, res.c_str(), v8::NewStringType::kNormal, static_cast<int>(res.size())).ToLocalChecked()).Check();
@@ -258,7 +258,7 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
@@ -350,7 +350,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -363,10 +362,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -394,7 +389,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -408,10 +402,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -443,7 +433,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -457,10 +446,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -487,7 +472,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -501,10 +485,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -531,7 +511,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -644,10 +623,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -674,7 +649,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -684,7 +658,7 @@ namespace builtin {
 
 						size_t i = static_cast<size_t>(-1);
 						for (const auto& entry : std::filesystem::directory_iterator(path)) {
-							std::string res = entry.path().string();
+							const auto& res = entry.path().native();
 							array->Set(context,
 									   ++i,
 									   v8::String::NewFromUtf8(isolate, res.c_str(), v8::NewStringType::kNormal, static_cast<int>(res.size())).ToLocalChecked()).Check();
@@ -697,10 +671,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -727,7 +697,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -747,10 +716,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -778,7 +743,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -797,10 +761,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -828,7 +788,6 @@ namespace builtin {
 					v8::HandleScope handleScope(isolate);
 					v8::Local<v8::Context> context = isolate->GetCurrentContext();
 					v8::Context::Scope contextScope(context);
-					v8::TryCatch tryCatch(isolate);
 
 					v8::Local<v8::Value> error = v8::Null(isolate);
 					v8::Local<v8::Value> result = v8::Undefined(isolate);
@@ -847,10 +806,6 @@ namespace builtin {
 
 					std::array args = { error, result };
 					UNUSED(callback.Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
-
-					if (tryCatch.HasCaught()) {
-						g_v8lm.ReportException(tryCatch.Message());
-					}
 				}).detach();
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());

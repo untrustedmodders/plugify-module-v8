@@ -18,14 +18,14 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 			
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
 			try {
 				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-				std::string normalizedPath = std::filesystem::weakly_canonical(path).string();
+				const auto& normalizedPath = std::filesystem::weakly_canonical(path).native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, normalizedPath.c_str(), v8::NewStringType::kNormal, static_cast<int>(normalizedPath.size())).ToLocalChecked());
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -44,7 +44,7 @@ namespace builtin {
 			}
 
 			try {
-				std::string path = result.string();
+				const auto& path = result.native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, path.c_str(), v8::NewStringType::kNormal, static_cast<int>(path.size())).ToLocalChecked());
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -67,7 +67,7 @@ namespace builtin {
 			}
 
 			try {
-				std::string path = std::filesystem::absolute(result).string();
+				const auto& path = std::filesystem::absolute(result).native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, path.c_str(), v8::NewStringType::kNormal, static_cast<int>(path.size())).ToLocalChecked());
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -79,7 +79,7 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
@@ -98,7 +98,7 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 2 || !args[0]->IsString() || !args[1]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Two path arguments are required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 2 arguments: frompath and topath"));
 				return;
 			}
 
@@ -106,7 +106,7 @@ namespace builtin {
 				std::filesystem::path fromPath = ToStdPath(isolate, args[0]);
 				std::filesystem::path toPath = ToStdPath(isolate, args[1]);
 
-				std::string relativePath = std::filesystem::relative(toPath, fromPath).string();
+				const auto& relativePath = std::filesystem::relative(toPath, fromPath).native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, relativePath.c_str(), v8::NewStringType::kNormal, static_cast<int>(relativePath.size())).ToLocalChecked());
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -118,14 +118,14 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
 			try {
 				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-				std::string dirPath = path.parent_path().string();
+				const auto& dirPath = path.parent_path().native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, dirPath.c_str(), v8::NewStringType::kNormal, static_cast<int>(dirPath.size())).ToLocalChecked());
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -137,14 +137,14 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
 			try {
 				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-				std::string baseName = path.filename().string();
+				const auto& baseName = path.filename().native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, baseName.c_str(), v8::NewStringType::kNormal, static_cast<int>(baseName.size())).ToLocalChecked());
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
@@ -156,14 +156,14 @@ namespace builtin {
 			v8::Isolate* isolate = args.GetIsolate();
 
 			if (args.Length() < 1 || !args[0]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Path argument is required"));
+				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 1 argument: path"));
 				return;
 			}
 
 			try {
 				std::filesystem::path path = ToStdPath(isolate, args[0]);
 
-				std::string extName = path.extension().string();
+				const auto& extName = path.extension().native();
 				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, extName.c_str(), v8::NewStringType::kNormal, static_cast<int>(extName.size())).ToLocalChecked());
 			} catch (const std::exception& e) {
 				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
