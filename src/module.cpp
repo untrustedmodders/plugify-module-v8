@@ -2350,7 +2350,7 @@ namespace v8lm {
 					break;
 				}
 				case ValueType::ArrayInt8: {
-					delete reinterpret_cast<plg::vector<int16_t>*>(ptr);
+					delete reinterpret_cast<plg::vector<int8_t>*>(ptr);
 					break;
 				}
 				case ValueType::ArrayInt16: {
@@ -3161,7 +3161,6 @@ namespace v8lm {
 			return ErrorData{ "lib directory not exists" };
 		}
 
-		const fs::path icuDataPath = libPath / "icudtl.dat";
 		const fs::path pluginsPath = fs::weakly_canonical(moduleBasePath / ".." / ".." / "plugins", ec);
 		if (ec) {
 			return ErrorData{ "Failed to get plugins directory path" };
@@ -3177,6 +3176,7 @@ namespace v8lm {
 		v8::V8::SetFlagsFromString("--expose_gc");
 #endif
 #ifndef V8LM_EXTERNAL
+		const fs::path icuDataPath = libPath / "icudtl.dat";
 		platform = v8::platform::NewDefaultPlatform();
 		if (!v8::V8::InitializeICUDefaultLocation(nullptr, fs::exists(icuDataPath, ec) ? icuDataPath.string().c_str() : nullptr)) {
 			return ErrorData{"Failed to initialize the ICU library bundled with V8"};
@@ -3200,7 +3200,6 @@ namespace v8lm {
 		//_isolate->SetHostInitializeImportMetaObjectCallback(ImportMeta);
 
 		_moduleLoader = std::make_unique<ModuleLoader>(libPath, pluginsPath);
-		_nextTimeoutId = static_cast<uint32_t>(-1);
 
 		v8::Locker locker(_isolate);
 		v8::Isolate::Scope isolateScope(_isolate);
@@ -3210,6 +3209,8 @@ namespace v8lm {
 		v8::Context::Scope contextScope(context);
 
 		v8::Local<v8::Object> global = context->Global();
+
+		// modules
 
 		v8::Local<v8::Object> modules = v8::Object::New(_isolate);
 		modules->Set(context, v8::String::NewFromUtf8Literal(_isolate, "assert"), builtin::assert::Init(_isolate)).Check();
@@ -3234,11 +3235,25 @@ namespace v8lm {
 		//modules->Set(v8::String::NewFromUtf8Literal(_isolate, "util"), builtin::util::Init(_isolate)).Check();
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "modules"), modules).Check();
 
+		// global
+
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "console"),
 					modules->Get(context, v8::String::NewFromUtf8Literal(_isolate, "console")).ToLocalChecked()).Check();
 
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "fetch"),
 					v8::FunctionTemplate::New(_isolate, builtin::fetch::Fetch)->GetFunction(context).ToLocalChecked()).Check();
+
+		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "setTimeout"),
+					v8::FunctionTemplate::New(_isolate, builtin::timers::SetTimeout)->GetFunction(context).ToLocalChecked()).Check();
+
+		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "clearTimeout"),
+					v8::FunctionTemplate::New(_isolate, builtin::timers::ClearTimeout)->GetFunction(context).ToLocalChecked()).Check();
+
+		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "setInterval"),
+					v8::FunctionTemplate::New(_isolate, builtin::timers::SetInterval)->GetFunction(context).ToLocalChecked()).Check();
+
+		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "clearInterval"),
+					v8::FunctionTemplate::New(_isolate, builtin::timers::ClearInterval)->GetFunction(context).ToLocalChecked()).Check();
 
 		v8::Local<v8::Object> pps = v8::Object::New(_isolate);
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "pps"), pps).Check();
@@ -3296,6 +3311,8 @@ namespace v8lm {
 	}
 
 	void V8LanguageModule::Shutdown() {
+		_taskScheduler.Reset();
+
 		_pluginClassObject.Reset();
 		_vector2ClassObject.Reset();
 		_vector3ClassObject.Reset();
@@ -3310,8 +3327,6 @@ namespace v8lm {
 		_idToModuleInfo.clear();
 		_dynamicImports.clear();
 		_failedPromises.clear();
-		_timeouts.clear();
-		_nextTimeoutId = static_cast<uint32_t>(-1);
 
 		_externalMap.clear();
 		_internalFunctions.clear();
@@ -3345,7 +3360,7 @@ namespace v8lm {
 		v8::Context::Scope contextScope(context);
 
 		v8::TryCatch tryCatch(_isolate);
-		_taskQueue.RunTasks();
+		_taskScheduler.Run();
 		ASSERT(!tryCatch.HasCaught());
 
 		_isolate->PerformMicrotaskCheckpoint();
@@ -4083,7 +4098,7 @@ namespace v8lm {
 
 		_dynamicImports[path].Reset(_isolate, resolver);
 
-		_taskQueue.Post([this, path = std::move(path)]() {
+		_taskScheduler.AddTask(0ms, [this, path = std::move(path)]() {
 			ImportDynamic(path);
 		});
 
@@ -4137,34 +4152,6 @@ namespace v8lm {
 		}
 	}
 
-	// static
-	void V8LanguageModule::HandlePromiseRejectCallback(v8::PromiseRejectMessage data) {
-		if (data.GetEvent() == v8::kPromiseRejectAfterResolved ||
-			data.GetEvent() == v8::kPromiseResolveAfterResolved) {
-			return;
-		}
-
-		v8::Local<v8::Promise> promise = data.GetPromise();
-		v8::Isolate* isolate = promise->GetIsolate();
-		auto* self = Get(isolate);
-
-		if (data.GetEvent() == v8::kPromiseRejectWithNoHandler) {
-			// An promise has been rejected and there is no failure handler yet.
-			// A handler might be added asynchronously later, so keep this failure
-			// around until Javascript has returned to native;
-			// see HandleUncaughtExceptionsInPromises below.
-			v8::Local<v8::Value> exception = data.GetValue();
-			v8::Local<v8::Message> message = MakeErrorMessage(isolate, exception);
-			self->_failedPromises.emplace_back(
-					v8::Global<v8::Promise>(isolate, promise),
-					v8::Global<v8::Message>(isolate, message));
-		} else if (data.GetEvent() == v8::kPromiseHandlerAddedAfterReject) {
-			// A handler has been added after a promise has failed;
-			// ignore its exception and don't report it.
-			self->RemovePendingFailedPromise(promise);
-		}
-	}
-
 	void V8LanguageModule::HandleUncaughtExceptionsInPromises() {
 		if (_failedPromises.empty()) {
 			return;
@@ -4175,71 +4162,6 @@ namespace v8lm {
 
 		for (const auto& [_, message] : list) {
 			ReportException(message.Get(_isolate));
-		}
-	}
-
-	void V8LanguageModule::SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& info) {
-		if (info.Length() < 1 || !info[0]->IsFunction()) {
-			ThrowException("setTimeout requires a function argument.");
-			return;
-		}
-
-		double timeout = 0;
-		if (info.Length() >= 2 && info[1]->IsNumber()) {
-			timeout = info[1].As<v8::Number>()->Value();
-			// From milliseconds to seconds.
-			timeout /= 1000.0;
-			if (timeout < 0) {
-				timeout = 0;
-			}
-		}
-
-		std::unique_lock<std::mutex> lock(_timeoutMutex);
-
-		uint32_t id = ++_nextTimeoutId;
-
-		_timeouts.emplace(id, v8::Global<v8::Function>(info.GetIsolate(), info[0].As<v8::Function>()));
-
-		_taskQueue.Post(timeout, [=, this] {
-			CallTimeout(id);
-		});
-
-		info.GetReturnValue().Set(id);
-	}
-
-	void V8LanguageModule::ClearTimeout(const v8::FunctionCallbackInfo<v8::Value>& info) {
-		v8::Isolate* isolate = info.GetIsolate();
-
-		if (info.Length() < 1 || !info[0]->IsUint32()) {
-			isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "clearTimeout requires an int argument."));
-			return;
-		}
-
-		uint32_t id = info[0].As<v8::Uint32>()->Value();
-		std::unique_lock<std::mutex> lock(_timeoutMutex);
-		_timeouts.erase(id);
-	}
-
-	void V8LanguageModule::CallTimeout(uint32_t id) {
-		auto it = _timeouts.find(id);
-		if (it == _timeouts.end()) {
-			// Removed by ClearTimeout.
-			return;
-		}
-
-		v8::Isolate::Scope isolateScope(_isolate);
-		v8::HandleScope handleScope(_isolate);
-		v8::Local<v8::Context> context = _isolate->GetCurrentContext();
-		v8::Context::Scope contextScope(context);
-		v8::TryCatch tryCatch(_isolate);
-
-		v8::Local<v8::Function> callback = it->second.Get(_isolate);
-		_timeouts.erase(it);
-
-		UNUSED(callback->Call(context, context->Global(), 0, {}));
-
-		if (tryCatch.HasCaught()) {
-			ReportException(tryCatch.Message());
 		}
 	}
 
@@ -4528,6 +4450,72 @@ namespace v8lm {
 			return std::string(or_string);
 		} else {
 			return ToString(value);
+		}
+	}
+
+	std::wstring V8LanguageModule::ToWString(v8::Local<v8::Value> value) const {
+		ASSERT(!value.IsEmpty());
+#if V8LM_PLATFORM_WINDOWS
+		if (value->IsString()) {
+			v8::Local<v8::String> v8s = value.As<v8::String>();
+			std::wstring s;
+			s.resize(v8s->Length());
+			v8s->Write(_isolate, reinterpret_cast<uint16_t*>(s.data()));
+			return s;
+		} else if (value->IsModuleNamespaceObject()) {
+			return L"[Module]";
+		} else if (value->IsSymbolObject()) {
+			return L"[SymbolObject]";
+		} else if (value->IsSymbol()) {
+			return ToWString(value.As<v8::Symbol>()->Description(_isolate));
+		} else {
+			v8::String::Value v(_isolate, value);
+			return *v != nullptr ? std::wstring(reinterpret_cast<wchar_t*>(*v), static_cast<size_t>(v.length())) : ToWString(value->TypeOf(_isolate));
+		}
+#else
+		std::string str = ToString(value);
+		size_t len = str.length();
+		std::wstring wstr(len, L'\0');
+
+		size_t converted = mbstowcs(&wstr[0], str.c_str(), len);
+		if (converted == static_cast<size_t>(-1)) {
+			throw std::runtime_error("Conversion failed");
+		}
+
+		wstr.resize(converted);
+		return wstr;
+#endif
+	}
+
+	std::wstring V8LanguageModule::ToWStringOr(v8::Local<v8::Value> value, std::wstring_view or_string) const {
+		if (value.IsEmpty()) {
+			return std::wstring(or_string);
+		} else {
+			return ToWString(value);
+		}
+	}
+
+	fs::path V8LanguageModule::ToPath(v8::Local<v8::Value> value) const {
+		ASSERT(!value->IsString());
+#if V8LM_PLATFORM_WINDOWS
+		v8::String::Value utf16(_isolate, value);
+		if (*utf16) {
+			return std::wstring_view{ reinterpret_cast<wchar_t*>(*utf16), static_cast<size_t>(utf16.length()) };
+		}
+#else
+		v8::String::Utf8Value utf8(_isolate, value);
+		if (*utf8) {
+			return std::string_view{ *utf8, static_cast<size_t>(utf8.length()) };
+		}
+#endif
+		return {};
+	}
+
+	fs::path V8LanguageModule::ToPathOr(v8::Local<v8::Value> value, fs::path or_path) const {
+		if (value.IsEmpty()) {
+			return std::move(or_path);
+		} else {
+			return ToPath(value);
 		}
 	}
 
