@@ -2,20 +2,16 @@ namespace builtin {
 	namespace os {
 		// Get the temporary directory path
 		void Tmpdir(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
-
 			try {
 				const auto& tmpDir = std::filesystem::temp_directory_path().native();
-				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, tmpDir.c_str(), v8::NewStringType::kNormal, static_cast<int>(tmpDir.size())).ToLocalChecked());
+				args.GetReturnValue().Set(g_v8lm.MakeString(tmpDir));
 			} catch (...) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Unable to retrieve temp directory"));
+				g_v8lm.ThrowException("Unable to retrieve temp directory");
 			}
 		}
 
 		// Get the user's home directory path
 		void Homedir(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
-
 			const char* homeDir = std::getenv("HOME");
 			if (!homeDir) {
 #if V8LM_PLATFORM_WINDOWS
@@ -24,42 +20,34 @@ namespace builtin {
 			}
 
 			if (homeDir) {
-				args.GetReturnValue().Set(v8::String::NewFromUtf8(isolate, homeDir).ToLocalChecked());
+				args.GetReturnValue().Set(g_v8lm.MakeString(homeDir));
 			} else {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Unable to retrieve home directory"));
+				g_v8lm.ThrowException("Unable to retrieve home directory");
 			}
 		}
 
 		// Get the endianness of the system
 		void Endianness(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
-
 			constexpr bool isBigEndian = V8LM_IS_BIG_ENDIAN;
 			if constexpr (isBigEndian) {
-				args.GetReturnValue().Set(v8::String::NewFromUtf8Literal(isolate, "BE"));
+				args.GetReturnValue().Set(g_v8lm.MakeString("BE"));
 			} else {
-				args.GetReturnValue().Set(v8::String::NewFromUtf8Literal(isolate, "LE"));
+				args.GetReturnValue().Set(g_v8lm.MakeString("LE"));
 			}
 		}
 
 		// Get the OS type
 		void OSType(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
-
-			args.GetReturnValue().Set(v8::String::NewFromUtf8Literal(isolate, V8LM_OS));
+			args.GetReturnValue().Set(g_v8lm.MakeString(V8LM_OS));
 		}
 
 		// Get the platform (operating system)
 		void Platform(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
-
-			args.GetReturnValue().Set(v8::String::NewFromUtf8Literal(isolate, V8LM_PLATFORM));
+			args.GetReturnValue().Set(g_v8lm.MakeString(V8LM_PLATFORM));
 		}
 
 		// Get the architecture
 		void Arch(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
-
 #if V8LM_ARCH_BITS == 64
 	#if V8LM_ARCH_ARM
 			char arch[] = "arm64";
@@ -74,7 +62,7 @@ namespace builtin {
 	#endif
 #endif
 
-			args.GetReturnValue().Set(v8::String::NewFromUtf8Literal(isolate, arch));
+			args.GetReturnValue().Set(g_v8lm.MakeString(arch));
 		}
 
 		// Initialize the module and export functions
@@ -83,32 +71,32 @@ namespace builtin {
 			v8::Local<v8::Object> exports = v8::Object::New(isolate);
 			
 			exports->Set(context,
-						v8::String::NewFromUtf8Literal(isolate, "tmpdir"),
+						g_v8lm.MakeString("tmpdir"),
 						v8::FunctionTemplate::New(isolate, Tmpdir)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						v8::String::NewFromUtf8Literal(isolate, "homedir"),
+						g_v8lm.MakeString("homedir"),
 						v8::FunctionTemplate::New(isolate, Homedir)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-					v8::String::NewFromUtf8Literal(isolate, "endianness"),
+					g_v8lm.MakeString("endianness"),
 						v8::FunctionTemplate::New(isolate, Endianness)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						v8::String::NewFromUtf8Literal(isolate, "type"),
+						g_v8lm.MakeString("type"),
 						v8::FunctionTemplate::New(isolate, OSType)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						v8::String::NewFromUtf8Literal(isolate, "platform"),
+						g_v8lm.MakeString("platform"),
 						v8::FunctionTemplate::New(isolate, Platform)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						v8::String::NewFromUtf8Literal(isolate, "arch"),
+						g_v8lm.MakeString("arch"),
 						v8::FunctionTemplate::New(isolate, Arch)->GetFunction(context).ToLocalChecked()
 						).Check();
 			

@@ -1,14 +1,5 @@
 namespace builtin {
 #if V8LM_PLATFORM_WINDOWS
-	// Helper: Convert v8::Value to std::wstring
-	std::wstring ToStdWString(v8::Isolate* isolate, v8::Local<v8::Value> value) {
-		v8::String::Value utf16(isolate, value);
-		if (*utf16) {
-			return { reinterpret_cast<wchar_t*>(*utf16), static_cast<size_t>(utf16.length()) };
-		}
-		return L"undefined";
-	}
-
 	static std::string GetErrorMessage() {
 		DWORD dwErrorCode = ::GetLastError();
 		if (dwErrorCode == 0) {
@@ -32,14 +23,38 @@ namespace builtin {
 		return { ptrBuffer.get(), size };
 	}
 	
-#define ToStdNString ToStdWString
+#define ToNString ToWString
 #else
-#define ToStdNString ToStdString
+#define ToNString ToString
 #endif
 
 	namespace fetch {
+		enum class Type : uint8_t {
+			Get,
+			Post,
+			Head
+		};
+		
+		using Callback = std::function<void(std::string)>;
+
 #if V8LM_PLATFORM_WINDOWS
-		static inline const wchar_t * const kDefaultUserAgent = L"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0";
+		const wchar_t* TypeToString(Type type) {
+			switch (type) {
+				case Type::Get: return L"GET";
+				case Type::Post: return L"POST";
+				case Type::Head: return L"HEAD";
+				default: return L"GET";
+			}
+		}
+
+		Type StringToType(std::wstring_view method) {
+			if (method == L"GET") return Type::Get;
+			else if (method == L"POST") return Type::Post;
+			else if (method == L"HEAD") return Type::Head;
+			return Type::Get;
+		}
+
+		static inline const wchar_t* const kDefaultUserAgent = L"V8-Fetcher/1.0";
 
 		// Global WinHTTP session handle
 		HINTERNET hSession = nullptr;
@@ -64,8 +79,8 @@ namespace builtin {
 		}
 
 		// Function to handle the HTTP request asynchronously using WinHTTP
-		std::future<std::string> fetchAsync(std::wstring&& url, std::wstring&& method, std::string&& body) {
-			return std::async(std::launch::async, [url = std::move(url), method = std::move(method), body = std::move(body)]() mutable {
+		void fetchAsync(std::wstring url, Type type, std::string body, Callback onSuccess, Callback onError) {
+			std::thread([url = std::move(url), type, body = std::move(body), onSuccess = std::move(onSuccess), onError = std::move(onError)]() {
 				HINTERNET hConnect = nullptr;
 				HINTERNET hRequest = nullptr;
 
@@ -94,15 +109,15 @@ namespace builtin {
 
 					// Create the HTTP request
 					const DWORD requestFlags = uc.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
-					hRequest = WinHttpOpenRequest(hConnect, method.c_str(), path.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, requestFlags);
+					hRequest = WinHttpOpenRequest(hConnect, TypeToString(type), path.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, requestFlags);
 					if (!hRequest) {
 						throw std::runtime_error(std::format("Failed to create HTTP request: {}", GetErrorMessage()));
 					}
 
 					BOOL result;
-					if (method == L"POST") {
+					if (type == Type::Post) {
 						const std::wstring_view additionalHeaders = L"Content-Type: application/x-www-form-urlencoded\r\n";
-						result = WinHttpSendRequest(hRequest, additionalHeaders.data(), static_cast<DWORD>(additionalHeaders.size()), body.data(), static_cast<DWORD>(body.size()), static_cast<DWORD>(body.size()), 0);
+						result = WinHttpSendRequest(hRequest, additionalHeaders.data(), static_cast<DWORD>(additionalHeaders.size()), const_cast<char*>(body.data()), static_cast<DWORD>(body.size()), static_cast<DWORD>(body.size()), 0);
 					} else {
 						result = WinHttpSendRequest(hRequest, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0);
 					}
@@ -132,18 +147,34 @@ namespace builtin {
 					WinHttpCloseHandle(hRequest);
 					WinHttpCloseHandle(hConnect);
 
-					return response;
+					onSuccess(std::move(response));
 				} catch (const std::exception& e) {
 					// Clean up in case of error
 					if (hRequest) WinHttpCloseHandle(hRequest);
 					if (hConnect) WinHttpCloseHandle(hConnect);
 
-					throw e;
+					onError(e.what());
 				}
-			});
+			}).detach();
 		}
 #else
-		static inline const char* const kDefaultUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:85.0) Gecko/20100101 Firefox/85.0";
+		const char* TypeToString(Type type) {
+			switch (type) {
+				case Type::Get: return "GET";
+				case Type::Post: return "POST";
+				case Type::Head: return "HEAD";
+				default: return "GET";
+			}
+		}
+
+		Type StringToType(std::string_view method) {
+			if (method == "GET") return Type::Get;
+			else if (method == "POST") return Type::Post;
+			else if (method == "HEAD") return Type::Head;
+			return Type::Get;
+		}
+
+		static inline const char* const kDefaultUserAgent = "V8-Fetcher/1.0";
 
 		// Initialize libcurl globally
 		bool Initialize() {
@@ -156,8 +187,8 @@ namespace builtin {
 		}
 
 		// Function to handle the HTTP request asynchronously using libcurl
-		std::future<std::string> fetchAsync(std::string&& url, std::string&& method, std::string&& body) {
-			return std::async(std::launch::async, [url = std::move(url), method = std::move(method), body = std::move(body)]() {
+		void fetchAsync(std::string url, Type type, std::string body, Callback onSuccess, Callback onError) {
+			std::thread([url = std::move(url), type, body = std::move(body), onSuccess = std::move(onSuccess), onError = std::move(onError)]() {
 				CURL* curl = curl_easy_init();
 				if (!curl) {
 					throw std::runtime_error("Failed to initialize libcurl");
@@ -166,8 +197,8 @@ namespace builtin {
 				std::string response;
 				curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 				curl_easy_setopt(curl, CURLOPT_USERAGENT, kDefaultUserAgent);
-				curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, method.c_str());
-				if (method == "POST") {
+				curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, TypeToString(type));
+				if (type == Type::Post) {
 					curl_easy_setopt(curl, CURLOPT_POST, 1L);
 					curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());
 				}
@@ -183,51 +214,183 @@ namespace builtin {
 				curl_easy_cleanup(curl);
 
 				if (res != CURLE_OK) {
-					throw std::runtime_error(curl_easy_strerror(res));
+					onError(curl_easy_strerror(res));
+				} else {
+					onSuccess(std::move(response));
 				}
-
-				return response;
-			});
+			}).detach();
 		}
 #endif
+		void ArrayBuffer(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			v8::Isolate* isolate = args.GetIsolate();
+			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			v8::Local<v8::Object> self = args.This();
+
+			v8::Local<v8::Value> body = self->Get(context, g_v8lm.MakeString("body")).ToLocalChecked();
+
+			if (!body->IsString()) {
+				g_v8lm.ThrowException("Response body is not a string");
+				return;
+			}
+
+			v8::Local<v8::String> bodyString = body->ToString(context).ToLocalChecked();
+
+			v8::String::Utf8Value utf8(isolate, bodyString);
+			const char* data = *utf8;
+			size_t length = utf8.length();
+
+			v8::Local<v8::ArrayBuffer> arrayBuffer = v8::ArrayBuffer::New(isolate, length);
+			std::memcpy(arrayBuffer->GetBackingStore()->Data(), data, length);
+			args.GetReturnValue().Set(arrayBuffer);
+		}
+
+		void Blob(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			args.GetReturnValue().Set(false);
+		}
+
+		void Bytes(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			v8::Isolate* isolate = args.GetIsolate();
+			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			v8::Local<v8::Object> self = args.This();
+
+			v8::Local<v8::Value> body = self->Get(context, g_v8lm.MakeString("body")).ToLocalChecked();
+
+			if (!body->IsString()) {
+				g_v8lm.ThrowException("Response body is not a string");
+				return;
+			}
+
+			v8::Local<v8::String> bodyString = body->ToString(context).ToLocalChecked();
+
+			v8::String::Utf8Value utf8(isolate, bodyString);
+			const char* data = *utf8;
+			size_t length = utf8.length();
+
+			v8::Local<v8::ArrayBuffer> arrayBuffer = v8::ArrayBuffer::New(isolate, length);
+			std::memcpy(arrayBuffer->GetBackingStore()->Data(), data, length);
+			v8::Local<v8::Uint8Array> uint8Array = v8::Uint8Array::New(arrayBuffer, 0, length);
+			args.GetReturnValue().Set(uint8Array);
+		}
+
+		void Clone(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			v8::Local<v8::Object> self = args.This();
+			args.GetReturnValue().Set(self->Clone());
+		}
+
+		void FormData(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			args.GetReturnValue().Set(false);
+		}
+
+		void Json(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			v8::Isolate* isolate = args.GetIsolate();
+			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			v8::Local<v8::Object> self = args.This();
+
+			v8::Local<v8::Value> body = self->Get(context, g_v8lm.MakeString("body")).ToLocalChecked();
+
+			if (!body->IsString()) {
+				g_v8lm.ThrowException("Response body is not a string");
+				return;
+			}
+
+			v8::Local<v8::String> jsonString = body->ToString(context).ToLocalChecked();
+			v8::Local<v8::Value> jsonValue;
+
+			if (!v8::JSON::Parse(context, jsonString).ToLocal(&jsonValue)) {
+				g_v8lm.ThrowException("Failed to parse JSON");
+				return;
+			}
+
+			args.GetReturnValue().Set(jsonValue);
+		}
+
+		void Text(const v8::FunctionCallbackInfo<v8::Value>& args) {
+			v8::Isolate* isolate = args.GetIsolate();
+			v8::Local<v8::Context> context = isolate->GetCurrentContext();
+			v8::Local<v8::Object> self = args.This();
+
+			v8::Local<v8::Value> body = self->Get(context, g_v8lm.MakeString("body")).ToLocalChecked();
+
+			if (!body->IsString()) {
+				g_v8lm.ThrowException("Response body is not a string");
+				return;
+			}
+
+			args.GetReturnValue().Set(body);
+		}
 
 		// Fetch function to be called from JavaScript
 		void Fetch(const v8::FunctionCallbackInfo<v8::Value>& args) {
 			v8::Isolate* isolate = args.GetIsolate();
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-			if (args.Length() < 2 || !args[0]->IsString() || !args[1]->IsObject()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Wrong number or types of arguments"));
+			if (args.Length() < 1 || !args[0]->IsString()) {
+				g_v8lm.ThrowException("Wrong number or types of arguments");
 				return;
 			}
 
 			try {
-				auto url = ToStdNString(isolate, args[0]);
-				v8::Local<v8::Object> options = args[1]->ToObject(context).ToLocalChecked();
-				auto method = ToStdNString(isolate, options->Get(context, v8::String::NewFromUtf8Literal(isolate, "method")).ToLocalChecked());
-				auto body = ToStdString(isolate, options->Get(context, v8::String::NewFromUtf8Literal(isolate, "body")).ToLocalChecked());
+				auto url = g_v8lm.ToNString(args[0]);
 
-				v8::Global<v8::Promise::Resolver> resolver = v8::Global<v8::Promise::Resolver>(isolate, v8::Promise::Resolver::New(context).ToLocalChecked());
-				args.GetReturnValue().Set(resolver.Get(isolate)->GetPromise());
+				Type type{};
+				std::string body;
+				if (args.Length() > 1 && args[1]->IsObject()) {
+					v8::Local<v8::Object> options = args[1]->ToObject(context).ToLocalChecked();
+					v8::Local<v8::Value> value;
+					if (options->Get(context, g_v8lm.MakeString("method")).ToLocal(&value)) {
+						type = StringToType(g_v8lm.ToNString(value));
+					}
+					if (options->Get(context, g_v8lm.MakeString("body")).ToLocal(&value)) {
+						body = g_v8lm.ToString(value);
+					}
+				}
 
-				std::future<std::string> future = fetchAsync(std::move(url), std::move(method), std::move(body));
+				v8::Local<v8::Promise::Resolver> resolver = v8::Promise::Resolver::New(context).ToLocalChecked();
+				args.GetReturnValue().Set(resolver->GetPromise());
 
-				std::thread([isolate, resolver = std::move(resolver), future = std::move(future)]() mutable {
-					v8::Local<v8::Context> context = isolate->GetCurrentContext();
-					try {
-						std::string response = future.get();
+				auto resolve = std::make_shared<v8::Global<v8::Promise::Resolver>>(isolate, resolver);
+
+				Callback onSuccess = [isolate, resolve, url](std::string response) {
+					g_v8lm.AddTask(0ms, [isolate, resolve = std::move(resolve), url = std::move(url), response = std::move(response)]() {
+						v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 						v8::Local<v8::Object> result = v8::Object::New(isolate);
-						result->Set(context, v8::String::NewFromUtf8Literal(isolate, "statusCode"), v8::String::NewFromUtf8Literal(isolate, "200")).Check();
-						result->Set(context, v8::String::NewFromUtf8Literal(isolate, "response"), v8::String::NewFromUtf8(isolate, response.c_str()).ToLocalChecked()).Check();
 
-						ASSERT(resolver.Get(isolate)->Resolve(context, result).FromMaybe(false));
-					} catch (const std::exception& e) {
-						ASSERT(resolver.Get(isolate)->Reject(context, v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked()).FromMaybe(false));
-					}
-				}).detach();
+						result->Set(context, g_v8lm.MakeString("status"), v8::Integer::New(isolate, 200)).Check();
+						result->Set(context, g_v8lm.MakeString("statusCode"), g_v8lm.MakeString("200")).Check();
+						result->Set(context, g_v8lm.MakeString("statusText"), g_v8lm.MakeString("OK")).Check();
+						result->Set(context, g_v8lm.MakeString("ok"), v8::Boolean::New(isolate, true)).Check();
+						result->Set(context, g_v8lm.MakeString("redirected"), v8::Boolean::New(isolate, false)).Check();
+						result->Set(context, g_v8lm.MakeString("url"), g_v8lm.MakeString(url)).Check();
+						result->Set(context, g_v8lm.MakeString("type"), g_v8lm.MakeString("basic")).Check();
+						result->Set(context, g_v8lm.MakeString("headers"), v8::Object::New(isolate)).Check();
+						result->Set(context, g_v8lm.MakeString("bodyUsed"), v8::Boolean::New(isolate, !response.empty())).Check();
+						result->Set(context, g_v8lm.MakeString("body"), g_v8lm.MakeString(response)).Check();
+
+						result->Set(context, g_v8lm.MakeString("arrayBuffer"), v8::Function::New(context, ArrayBuffer).ToLocalChecked()).Check();
+						result->Set(context, g_v8lm.MakeString("blob"), v8::Function::New(context, Blob).ToLocalChecked()).Check();
+						result->Set(context, g_v8lm.MakeString("bytes"), v8::Function::New(context, Bytes).ToLocalChecked()).Check();
+						result->Set(context, g_v8lm.MakeString("clone"), v8::Function::New(context, Clone).ToLocalChecked()).Check();
+						result->Set(context, g_v8lm.MakeString("formData"), v8::Function::New(context, FormData).ToLocalChecked()).Check();
+						result->Set(context, g_v8lm.MakeString("json"), v8::Function::New(context, Json).ToLocalChecked()).Check();
+						result->Set(context, g_v8lm.MakeString("text"), v8::Function::New(context, Text).ToLocalChecked()).Check();
+
+						ASSERT(resolve->Get(isolate)->Resolve(context, result).FromMaybe(false));
+					});
+				};
+
+				Callback onError = [isolate, resolve](std::string error) {
+					g_v8lm.AddTask(0ms, [isolate, resolve = std::move(resolve), error = std::move(error)]() {
+						v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+						ASSERT(resolve->Get(isolate)->Reject(context, g_v8lm.MakeString(error)).FromMaybe(false));
+					});
+				};
+
+				fetchAsync(std::move(url), type, std::move(body), std::move(onSuccess), std::move(onError));
+
 			} catch (const std::exception& e) {
-				isolate->ThrowException(v8::String::NewFromUtf8(isolate, e.what()).ToLocalChecked());
+				g_v8lm.ThrowException(e.what());
 			}
 		}
 	}

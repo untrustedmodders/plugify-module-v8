@@ -11,24 +11,13 @@ namespace builtin {
 	namespace assert {
 		std::string Stringify(v8::Isolate* isolate, v8::Local<v8::Value> obj) {
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
-			v8::Local<v8::Object> global = context->Global();
-
-			// Get the JSON object from the global context
-			v8::Local<v8::Value> json_val = global->Get(context, v8::String::NewFromUtf8Literal(isolate, "JSON")).ToLocalChecked();
-			v8::Local<v8::Object> json_obj = json_val.As<v8::Object>();
 
 			// Get the JSON.stringify function
-			v8::Local<v8::Value> stringify_val = json_obj->Get(context, v8::String::NewFromUtf8Literal(isolate, "stringify")).ToLocalChecked();
-			v8::Local<v8::Function> stringify_func = stringify_val.As<v8::Function>();
+			v8::Local<v8::Value> val = v8::JSON::Stringify(context, obj).ToLocalChecked();
 
-			// Call JSON.stringify(obj, replacer, space)
-			v8::Local<v8::Value> replacer = v8::Number::New(isolate, 0);
-			v8::Local<v8::Value> space = v8::Number::New(isolate, 2);
-			std::array args = { obj, replacer, space };
-
-			v8::Local<v8::Value> result;
-			if (stringify_func->Call(context, json_obj, static_cast<int>(args.size()), args.data()).ToLocal(&result)) {
-				return ToStdString(isolate, result.As<v8::String>());
+			// Check if the result is a string
+			if (val->IsString()) {
+				return g_v8lm.ToString(val.As<v8::String>());
 			}
 
 			// Fallback in case of an error
@@ -41,12 +30,12 @@ namespace builtin {
 			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 2 || !args[0]->IsBoolean() || !args[1]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 2 arguments: expression and message"));
+				g_v8lm.ThrowException("Expected 2 arguments: expression and message");
 				return;
 			}
 
 			bool expr = args[0]->BooleanValue(isolate);
-			std::string message = ToStdString(isolate, args[1]);
+			std::string message = g_v8lm.ToString(args[1]);
 
 			ASSERT_MSG(expr, message);
 		}
@@ -57,13 +46,13 @@ namespace builtin {
 			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 3 || !args[0]->IsString() || !args[1]->IsString() || !args[2]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 3 arguments: value1, value2 and message"));
+				g_v8lm.ThrowException("Expected 3 arguments: value1, value2 and message");
 				return;
 			}
 
-			std::string expect = ToStdString(isolate, args[0]);
-			std::string actual = ToStdString(isolate, args[1]);
-			std::string message = ToStdString(isolate, args[2]);
+			std::string expect = g_v8lm.ToString(args[0]);
+			std::string actual = g_v8lm.ToString(args[1]);
+			std::string message = g_v8lm.ToString(args[2]);
 
 			ASSERT_MSG(expect == actual, message);
 		}
@@ -74,13 +63,13 @@ namespace builtin {
 			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 3 || !args[0]->IsString() || !args[1]->IsString() || !args[2]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 3 arguments: value1, value2 and message"));
+				g_v8lm.ThrowException("Expected 3 arguments: value1, value2 and message");
 				return;
 			}
 
-			std::string expect = ToStdString(isolate, args[0]);
-			std::string actual = ToStdString(isolate, args[1]);
-			std::string message = ToStdString(isolate, args[2]);
+			std::string expect = g_v8lm.ToString(args[0]);
+			std::string actual = g_v8lm.ToString(args[1]);
+			std::string message = g_v8lm.ToString(args[2]);
 
 			ASSERT_MSG(expect != actual, message);
 		}
@@ -91,7 +80,7 @@ namespace builtin {
 			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 3 || !args[0]->IsObject() || !args[1]->IsObject() || !args[2]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 3 arguments: value1, value2 and message"));
+				g_v8lm.ThrowException("Expected 3 arguments: value1, value2 and message");
 				return;
 			}
 
@@ -108,7 +97,7 @@ namespace builtin {
 			v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 3 || !args[0]->IsObject() || !args[1]->IsObject() || !args[2]->IsString()) {
-				isolate->ThrowException(v8::String::NewFromUtf8Literal(isolate, "Expected 3 arguments: value1, value2 and message"));
+				g_v8lm.ThrowException("Expected 3 arguments: value1, value2 and message");
 				return;
 			}
 
@@ -126,32 +115,32 @@ namespace builtin {
 			v8::Local<v8::Object> exports = v8::Object::New(isolate);
 
 			exports->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "assert"),
+						 g_v8lm.MakeString("assert"),
 						 v8::FunctionTemplate::New(isolate, Assert)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "ok"),
+						 g_v8lm.MakeString("ok"),
 						 v8::FunctionTemplate::New(isolate, Assert)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "equal"),
+						 g_v8lm.MakeString("equal"),
 						 v8::FunctionTemplate::New(isolate, Equal)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "notEqual"),
+						 g_v8lm.MakeString("notEqual"),
 						 v8::FunctionTemplate::New(isolate, NotEqual)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "deepEqual"),
+						 g_v8lm.MakeString("deepEqual"),
 						 v8::FunctionTemplate::New(isolate, DeepEqual)->GetFunction(context).ToLocalChecked()
 						).Check();
 
 			exports->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "notDeepEqual"),
+						 g_v8lm.MakeString("notDeepEqual"),
 						 v8::FunctionTemplate::New(isolate, NotDeepEqual)->GetFunction(context).ToLocalChecked()
 						).Check();
 

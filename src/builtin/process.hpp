@@ -35,15 +35,15 @@ namespace builtin {
 		void PopulateEnvObject(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Object>& envObject) {
 			char** env = environ;
 			for (env; *env; ++env) {
-				std::string entry(*env);
+				std::string_view entry(*env);
 				size_t delimiter = entry.find('=');
 				if (delimiter != std::string::npos) {
-					std::string key = entry.substr(0, delimiter);
-					std::string value = entry.substr(delimiter + 1);
+					std::string_view key = entry.substr(0, delimiter);
+					std::string_view value = entry.substr(delimiter + 1);
 					envObject->Set(context,
-								   v8::String::NewFromUtf8(isolate, key.c_str(), v8::NewStringType::kNormal, static_cast<int>(key.size())).ToLocalChecked(),
-								   v8::String::NewFromUtf8(isolate, value.c_str(), v8::NewStringType::kNormal, static_cast<int>(key.size())).ToLocalChecked()
-								   ).Check();
+								  g_v8lm.MakeString(key),
+								  g_v8lm.MakeString(value)
+								  ).Check();
 				}
 			}
 		}
@@ -58,41 +58,41 @@ namespace builtin {
 
 			// Bind functions to the `Process` object
 			process->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "exit"),
+						 g_v8lm.MakeString("exit"),
 						 v8::FunctionTemplate::New(isolate, Exit)->GetFunction(context).ToLocalChecked()
 						 ).Check();
 
 			process->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "getgid"),
+						 g_v8lm.MakeString("getgid"),
 						 v8::FunctionTemplate::New(isolate, GetGid)->GetFunction(context).ToLocalChecked()
 						 ).Check();
 
 			process->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "getpid"),
+						 g_v8lm.MakeString("getpid"),
 						 v8::FunctionTemplate::New(isolate, GetPid)->GetFunction(context).ToLocalChecked()
 						 ).Check();
 
 			// Bind constants to the `Process` object
 			process->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "title"),
-						 v8::String::NewFromUtf8Literal(isolate, V8LM_NAME)
+						 g_v8lm.MakeString("title"),
+						 g_v8lm.MakeString(V8LM_NAME)
 						 ).Check();
 
 			process->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "version"),
-						 v8::String::NewFromUtf8Literal(isolate, V8LM_VERSION)
+						 g_v8lm.MakeString("version"),
+						 g_v8lm.MakeString(V8LM_VERSION)
 						 ).Check();
 
 			// Bind `env` to the `Process` object
 			v8::Local<v8::Object> envObject = v8::Object::New(isolate);
 			PopulateEnvObject(isolate, context, envObject);
 			process->Set(context,
-						 v8::String::NewFromUtf8Literal(isolate, "env"),
+						 g_v8lm.MakeString("env"),
 						 envObject
 						 ).Check();
 
 			// Set the `Process` object as the exports
-			exports->Set(context, v8::String::NewFromUtf8Literal(isolate, "process"), process).Check();
+			exports->Set(context, g_v8lm.MakeString("process"), process).Check();
 
 			return exports;
 		}
