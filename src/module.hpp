@@ -1,5 +1,5 @@
 #include "module_loader.hpp"
-#include "task_queue.hpp"
+#include "task_scheduler.hpp"
 
 #include <plugify/any.hpp>
 #include <plugify/jit/call.hpp>
@@ -184,9 +184,9 @@ namespace v8lm {
 		void ImportDynamic(const fs::path& path);
 		void CallTimeout(uint32_t id);
 
-		static void HandlePromiseRejectCallback(v8::PromiseRejectMessage message);
 		void RemovePendingFailedPromise(v8::Local<v8::Promise> promise);
 
+	public:
 		void ThrowException(std::string_view error) const;
 		void ThrowRangeError(std::string_view error) const;
 		void ThrowTypeError(std::string_view error, v8::Local<v8::Value> value) const;
@@ -198,12 +198,21 @@ namespace v8lm {
 		v8::Local<v8::String> MakeString(std::wstring_view value) const;
 		std::string ToString(v8::Local<v8::Value> value) const;
 		std::string ToStringOr(v8::Local<v8::Value> value, std::string_view or_string) const;
+		std::wstring ToWString(v8::Local<v8::Value> value) const;
+		std::wstring ToWStringOr(v8::Local<v8::Value> value, std::wstring_view or_string) const;
+		fs::path ToPath(v8::Local<v8::Value> value) const;
+		fs::path ToPathOr(v8::Local<v8::Value> value, fs::path or_path) const;
 
-	public:
 		void InternalCall(plugify::MethodHandle method, plugify::MemAddr data, const plugify::JitCallback::Parameters* params, size_t count, const plugify::JitCallback::Return* ret);
 		void ExternalCall(plugify::MethodHandle method, plugify::MemAddr data, const plugify::JitCallback::Parameters* params, size_t count, const plugify::JitCallback::Return* ret);
-		void SetTimeout(const v8::FunctionCallbackInfo<v8::Value>& info);
-		void ClearTimeout(const v8::FunctionCallbackInfo<v8::Value>& info);
+
+		uint32_t AddTask(std::chrono::milliseconds delay, Action action, bool repeat = false) {
+			return _taskScheduler.AddTask(delay, std::move(action), repeat);
+		}
+
+		void RemoveTask(uint32_t id) {
+			_taskScheduler.RemoveTask(id);
+		}
 
 	private:
 		std::shared_ptr<plugify::IPlugifyProvider> _provider;
@@ -247,11 +256,7 @@ namespace v8lm {
 		std::unordered_map<fs::path, v8::Global<v8::Promise::Resolver>, path_hash> _dynamicImports;
 		JsExceptionList _failedPromises;
 
-		//ThreadPoolTaskQueue* background_queue_;
-		TaskQueue _taskQueue;
-		std::unordered_map<uint32_t, v8::Global<v8::Function>> _timeouts;
-		uint32_t _nextTimeoutId;
-		std::mutex _timeoutMutex;
+		TaskScheduler _taskScheduler;
 	};
 
 	V8LanguageModule g_v8lm;

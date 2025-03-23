@@ -1,6 +1,5 @@
 #pragma once
 
-#include <condition_variable>
 #include <functional>
 #include <mutex>
 #include <queue>
@@ -13,10 +12,12 @@
 #include <vector>
 #include <variant>
 #include <map>
+#include <set>
 #include <exception>
 #include <source_location>
 #include <future>
 #include <stdexcept>
+#include <system_error>
 
 #include <filesystem>
 namespace fs = std::filesystem;
