@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.6...v1.1.0) (2025-03-27)
+
+
+### Features
+
+* add new getters for plugin ([81c2464](https://github.com/untrustedmodders/plugify-module-v8/commit/81c2464acb44ecf9acaa74b45c71e30673cdd86b))
+
+
+### Bug Fixes
+
+* add fetch and async fs methods ([924fb6e](https://github.com/untrustedmodders/plugify-module-v8/commit/924fb6e892d098e9f602df3e240398f09a845e51))
+* build as dep ([7ba2029](https://github.com/untrustedmodders/plugify-module-v8/commit/7ba2029233cb3de9656ea5228cfb3f03739d80a3))
+* rework task scheduler and add interval timers ([4187b08](https://github.com/untrustedmodders/plugify-module-v8/commit/4187b080fec97fae6c889b025ce158bd1a17a0c1))
+* small refactor ([f308fba](https://github.com/untrustedmodders/plugify-module-v8/commit/f308fbafbc3d051c518ca316c45623fcf338492a))
+* small refactor ([6da43d3](https://github.com/untrustedmodders/plugify-module-v8/commit/6da43d36e6a86809a30903f46cc44ce751c1c072))
+* small tasks improvements ([073b602](https://github.com/untrustedmodders/plugify-module-v8/commit/073b602e217b92676f2c74e456e8104cf63f95a2))
+* wrong dtor ([18c0b81](https://github.com/untrustedmodders/plugify-module-v8/commit/18c0b81b870ced9aafa46012b6f48084dae5e23b))
+* wrong link ([10c7bba](https://github.com/untrustedmodders/plugify-module-v8/commit/10c7bbac7a81df4624fbf1721c8b15aa6fb9161a))
+
 ## [1.0.6](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.5...v1.0.6) (2025-03-09)
 
 
