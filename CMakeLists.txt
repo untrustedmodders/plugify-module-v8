@@ -183,23 +183,23 @@ elseif(UNIX)
     target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/sym/version_script.lds")
 endif()
 
-file(READ "${CMAKE_SOURCE_DIR}/version.txt" VERSION_FILE_CONTENTS)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" VERSION_FILE_CONTENTS)
 string(STRIP "${VERSION_FILE_CONTENTS}" VERSION_FILE_CONTENTS)
 set(V8LM_VERSION "${CMAKE_PROJECT_VERSION}" CACHE STRING "Set version name")
 set(V8LM_PACKAGE "${PROJECT_NAME}" CACHE STRING "Set package name")
 string(REPLACE "v" "" V8LM_PACKAGE "${V8LM_PACKAGE}")
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}.pmodule.in
-    ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pmodule
+    ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.pmodule.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pmodule
 )
 
 set(V8LM_GITHUB_ACTIONS "0" CACHE STRING "Build with github actions")
 
 if(V8LM_GITHUB_ACTIONS)
     execute_process(COMMAND cmake -E create_symlink
-            "${CMAKE_SOURCE_DIR}/lib"
-            "${CMAKE_BINARY_DIR}/lib"
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib"
+            "${CMAKE_CURRENT_BINARY_DIR}/lib"
     )
 endif()
 
