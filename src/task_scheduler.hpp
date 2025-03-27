@@ -10,8 +10,10 @@ namespace v8lm {
 	struct Task {
 		uint32_t id;
 		bool repeat;
+		mutable bool exec;
+		mutable bool kill;
 		TimePoint executeTime;
-		std::chrono::milliseconds interval;
+		std::chrono::milliseconds delay;
 		Action action;
 
 		bool operator<(const Task& other) const {
@@ -22,10 +24,9 @@ namespace v8lm {
 	
 	class TaskScheduler {
 	private:
-		std::set<Task> _task;
+		std::set<Task> _tasks;
 		std::mutex _mutex;
-		bool _running = true;
-		uint32_t _nextId = 0;
+		static inline uint32_t _nextId = static_cast<uint32_t>(-1);
 		
 	public:
 		uint32_t AddTask(std::chrono::milliseconds delay, Action action, bool repeat = false);

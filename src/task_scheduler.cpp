@@ -6,62 +6,69 @@ uint32_t TaskScheduler::AddTask(std::chrono::milliseconds delay, Action action, 
 	std::lock_guard<std::mutex> lock(_mutex);
 
 	uint32_t id = ++_nextId;
-	_task.emplace(id, repeat, Clock::now() + delay, delay, std::move(action));
+	_tasks.emplace(id, repeat, false, false, Clock::now() + delay, delay, std::move(action));
 	return id;
 }
 
 void TaskScheduler::RemoveTask(uint32_t id) {
 	std::lock_guard<std::mutex> lock(_mutex);
 
-	auto it = std::find_if(_task.begin(), _task.end(), [id](const Task& task) {
+	auto it = std::find_if(_tasks.begin(), _tasks.end(), [id](const Task& task) {
 		return task.id == id;
 	});
 
-	if (it != _task.end()) {
-		_task.erase(it);
+	if (it != _tasks.end()) {
+		if (it->exec) {
+			it->kill = true;
+		} else {
+			_tasks.erase(it);
+		}
 	}
 }
 
 void TaskScheduler::RescheduleTask(uint32_t id, std::chrono::milliseconds newDelay) {
 	std::lock_guard<std::mutex> lock(_mutex);
 
-	auto it = std::find_if(_task.begin(), _task.end(), [id](const Task& task) {
+	auto it = std::find_if(_tasks.begin(), _tasks.end(), [id](const Task& task) {
 		return task.id == id;
 	});
 
-	if (it != _task.end()) {
-		auto node = _task.extract(it);
-		node.value().executeTime = Clock::now() + newDelay;
-		_task.insert(std::move(node));
+	if (it != _tasks.end()) {
+		if (!it->exec) {
+			auto node = _tasks.extract(it);
+			node.value().delay = newDelay;
+			node.value().executeTime = Clock::now() + newDelay;
+			_tasks.insert(std::move(node));
+		}
 	}
 }
 
 void TaskScheduler::Run() {
-	std::lock_guard<std::mutex> lock(_mutex);
-
-	while (!_task.empty()) {
+	while (!_tasks.empty()) {
 		auto now = Clock::now();
-		auto it = _task.begin();
+		auto it = _tasks.begin();
 
 		if (now >= it->executeTime) {
+			it->exec = true;
 			it->action();
+			it->exec = false;
 
-			if (it->repeat) {
-				auto node = _task.extract(it);
-				node.value().executeTime = Clock::now() + it->interval;
-				_task.insert(std::move(node));
-			} else {
-				_task.erase(it); // Only erase non-repeating tasks
+			if (it->repeat && !it->kill) {
+				auto node = _tasks.extract(it);
+				node.value().executeTime = Clock::now() + node.value().delay;
+				_tasks.insert(std::move(node));
+				continue;
 			}
+
+			_tasks.erase(it);
 		} else {
 			break;
 		}
 	}
 }
 
-
 void TaskScheduler::Reset() {
 	std::lock_guard<std::mutex> lock(_mutex);
 
-	_task.clear();
+	_tasks.clear();
 }
