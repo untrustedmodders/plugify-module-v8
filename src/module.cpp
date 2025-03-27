@@ -3179,7 +3179,7 @@ namespace v8lm {
 		const fs::path icuDataPath = libPath / "icudtl.dat";
 		platform = v8::platform::NewDefaultPlatform();
 		if (!v8::V8::InitializeICUDefaultLocation(nullptr, fs::exists(icuDataPath, ec) ? icuDataPath.string().c_str() : nullptr)) {
-			return ErrorData{"Failed to initialize the ICU library bundled with V8"};
+			return ErrorData{ "Failed to initialize the ICU library bundled with V8" };
 		}
 		v8::V8::InitializeExternalStartupData(libPath.string().c_str());
 		v8::V8::InitializePlatform(platform.get());
@@ -3450,6 +3450,7 @@ namespace v8lm {
 				CreateJsObject(desc.GetDescription()),
 				CreateJsObject(desc.GetVersionName()),
 				CreateJsObject(desc.GetCreatedBy()),
+				CreateJsObject(desc.GetCreatedByURL()),
 				CreateJsObject(plugin.GetBaseDir()),
 				CreateJsObject(plugin.GetConfigsDir()),
 				CreateJsObject(plugin.GetDataDir()),
