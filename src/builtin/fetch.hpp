@@ -86,13 +86,12 @@ namespace builtin {
 
 				try {
 					// Parse the URL
-					URL_COMPONENTSW uc = {
-						.dwStructSize = sizeof(uc),
-						.dwSchemeLength = static_cast<DWORD>(-1),
-						.dwHostNameLength = static_cast<DWORD>(-1),
-						.dwUrlPathLength = static_cast<DWORD>(-1),
-						.dwExtraInfoLength = static_cast<DWORD>(-1)
-					};
+					URL_COMPONENTSW uc = {};
+					uc.dwStructSize = sizeof(uc);
+					uc.dwSchemeLength = static_cast<DWORD>(-1);
+					uc.dwHostNameLength = static_cast<DWORD>(-1);
+					uc.dwUrlPathLength = static_cast<DWORD>(-1);
+					uc.dwExtraInfoLength = static_cast<DWORD>(-1);
 
 					if (!WinHttpCrackUrl(url.c_str(), url.length(), 0, &uc)) {
 						throw std::runtime_error("Failed to parse URL");
