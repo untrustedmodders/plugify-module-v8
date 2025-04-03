@@ -4,10 +4,6 @@ if(POLICY CMP0092)
     cmake_policy(SET CMP0092 NEW) # Don't add -W3 warning level by default.
 endif()
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug)
-endif()
-
 # Use statically-linked runtime library in Release build.
 # https://cmake.org/cmake/help/git-stage/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -20,8 +16,18 @@ else()
 endif()
 
 
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" VERSION_FILE_CONTENTS)
+string(STRIP "${VERSION_FILE_CONTENTS}" VERSION_FILE_CONTENTS)
+set(V8LM_VERSION "${CMAKE_PROJECT_VERSION}" CACHE STRING "Set version name")
+set(V8LM_PACKAGE "plugify-module-v8" CACHE STRING "Set package name")
+string(REPLACE "v" "" V8LM_PACKAGE "${V8LM_PACKAGE}")
+string(REGEX REPLACE "[.+-]" ";" V8LM_VERSION_LIST ${V8LM_VERSION})
+list(GET V8LM_VERSION_LIST 0 V8LM_VERSION_MAJOR)
+list(GET V8LM_VERSION_LIST 1 V8LM_VERSION_MINOR)
+list(GET V8LM_VERSION_LIST 2 V8LM_VERSION_PATCH)
+
 project(plugify-module-v8
-        VERSION 1.0.0.0
+        VERSION "${V8LM_VERSION_MAJOR}.${V8LM_VERSION_MINOR}.${V8LM_VERSION_PATCH}"
         DESCRIPTION "JavaScript (V8) Language Module"
         HOMEPAGE_URL "https://github.com/untrustedmodders/plugify-module-v8"
         LANGUAGES CXX)
@@ -30,6 +36,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
 
 #
 # Plugify
@@ -182,12 +192,6 @@ if(APPLE)
 elseif(UNIX)
     target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/sym/version_script.lds")
 endif()
-
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" VERSION_FILE_CONTENTS)
-string(STRIP "${VERSION_FILE_CONTENTS}" VERSION_FILE_CONTENTS)
-set(V8LM_VERSION "${CMAKE_PROJECT_VERSION}" CACHE STRING "Set version name")
-set(V8LM_PACKAGE "${PROJECT_NAME}" CACHE STRING "Set package name")
-string(REPLACE "v" "" V8LM_PACKAGE "${V8LM_PACKAGE}")
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.pmodule.in
