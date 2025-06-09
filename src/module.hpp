@@ -15,7 +15,6 @@
 #include <plugify/string.hpp>
 #include <plugify/vector.hpp>
 
-#include <asmjit/asmjit.h>
 #include <v8.h>
 
 namespace v8lm {
