@@ -417,7 +417,7 @@ namespace v8lm {
 		return std::nullopt;
 	}
 
-	template<class T>
+	template<class T> requires(std::is_signed_v<T> || std::is_unsigned_v<T>)
 	std::optional<T> V8LanguageModule::ValueFromIntegerObject(v8::Local<v8::Value> value) {
 		if (value->IsNumber()) {
 			const auto castResult = static_cast<T>(value.As<v8::Number>()->IntegerValue(_isolate->GetCurrentContext()).ToChecked());
@@ -438,7 +438,7 @@ namespace v8lm {
 		return std::nullopt;
 	}
 
-	template<class T>
+	template<class T> requires(std::is_floating_point_v<T>)
 	std::optional<T> V8LanguageModule::ValueFromNumberObject(v8::Local<v8::Value> value) {
 		if (value->IsNumber()) {
 			const auto castResult = static_cast<T>(value.As<v8::Number>()->NumberValue(_isolate->GetCurrentContext()).ToChecked());
@@ -2656,8 +2656,8 @@ namespace v8lm {
 				return CreateJsObject(*str);
 			}
 			case ValueType::Any: {
-				auto* const str = ret.GetReturn<plg::any*>();
-				return CreateJsObject(*str);
+				auto* const any = ret.GetReturn<plg::any*>();
+				return CreateJsObject(*any);
 			}
 			case ValueType::ArrayBool: {
 				auto* const arr = ret.GetReturn<plg::vector<bool>*>();
@@ -3509,7 +3509,7 @@ namespace v8lm {
 			}
 
 			if (!func) {
-				exportErrors.emplace_back(std::format("{} (Not found '{}' in module)", method.GetName(), method.GetFunctionName()));
+				exportErrors.emplace_back(std::format("{} (not found '{}' in module)", method.GetName(), method.GetFunctionName()));
 				continue;
 			}
 
@@ -3819,7 +3819,7 @@ namespace v8lm {
 		return moduleObject;
 	}
 
-	// we uses OnSyntheticModuleLoaded instead
+	// we uses synthetic instead
 	void V8LanguageModule::OnMethodExport(PluginHandle plugin) {
 	}
 

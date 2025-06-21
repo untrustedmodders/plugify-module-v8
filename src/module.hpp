@@ -99,9 +99,9 @@ namespace v8lm {
 		JsType GetType(v8::Local<v8::Value> value);
 		template<typename T>
 		std::optional<T> ValueFromObject(v8::Local<v8::Value> value);
-		template<class T>
+		template<class T> requires(std::is_signed_v<T> || std::is_unsigned_v<T>)
 		std::optional<T> ValueFromIntegerObject(v8::Local<v8::Value> value);
-		template<class T>
+		template<class T> requires(std::is_floating_point_v<T>)
 		std::optional<T> ValueFromNumberObject(v8::Local<v8::Value> value);
 		template<typename T>
 		std::optional<plg::vector<T>> ArrayFromObject(v8::Local<v8::Value> arrayValue);
