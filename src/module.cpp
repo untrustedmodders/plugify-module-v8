@@ -3130,7 +3130,7 @@ namespace v8lm {
 				}
 
 				resultArray->Set(context, ++k, ref).Check();
-				if (k >= refParamsCount + 1) {
+				if (k == refParamsCount) {
 					break;
 				}
 			}
