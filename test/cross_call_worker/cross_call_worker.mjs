@@ -60,7 +60,7 @@ const podToString = (pod) => {
         return `{${floatStr(pod.x)}, ${floatStr(pod.y)}, ${floatStr(pod.z)}, ${floatStr(pod.w)}}`;
     }
     if (pod instanceof Matrix4x4) {
-        const formattedRows = pod.elements.map(row => `{${row.map(m => floatStr(m)).join(', ')}}`);
+        const formattedRows = pod.m.map(row => `{${row.map(m => floatStr(m)).join(', ')}}`);
         return `{${formattedRows.join(', ')}}`;
     }
     throw new TypeError('Non POD type');
