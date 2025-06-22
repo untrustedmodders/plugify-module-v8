@@ -830,7 +830,7 @@ namespace v8lm {
 		if (value->IsObject() && value->InstanceOf(context, _matrix4x4ClassObject.Get(_isolate)).FromMaybe(false)) {
 			v8::Local<v8::Object> object = value.As<v8::Object>();
 			v8::Local<v8::Value> elementsValue;
-			if (!object->Get(context, v8::String::NewFromUtf8Literal(_isolate, "elements")).ToLocal(&elementsValue)) {
+			if (!object->Get(context, v8::String::NewFromUtf8Literal(_isolate, "m")).ToLocal(&elementsValue)) {
 				ThrowException("Object does not have an 'elements' property.");
 				return std::nullopt;
 			}
