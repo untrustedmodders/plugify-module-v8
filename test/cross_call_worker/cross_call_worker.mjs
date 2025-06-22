@@ -1573,7 +1573,7 @@ export class CallbackHolder {
 
     static mockMat4x4() {
         const mat = Matrix4x4.zero();
-        mat.elements[0][0] = 1.0;
+        mat.m[0][0] = 1.0;
         return mat;
     }
 
