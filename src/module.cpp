@@ -2247,8 +2247,7 @@ namespace v8lm {
 						tryCatch.Reset();
 					}
 				}
-				++k;
-				if (k == refParamsCount) {
+				if (++k == refParamsCount) {
 					break;
 				}
 			}
