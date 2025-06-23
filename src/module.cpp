@@ -2211,9 +2211,7 @@ namespace v8lm {
 			return;
 		}
 
-		const bool hasRefParams = refParamsCount != 0;
-
-		if (hasRefParams) {
+		if (refParamsCount != 0) {
 			if (!result->IsArray()) {
 				ThrowTypeError("Expected array as return value", result);
 				if (tryCatch.HasCaught()) {
@@ -2253,7 +2251,7 @@ namespace v8lm {
 			}
 		}
 
-		v8::Local<v8::Value> returnValue = hasRefParams ? result.As<v8::Array>()->Get(context, 0).ToLocalChecked() : result;
+		v8::Local<v8::Value> returnValue = refParamsCount != 0 ? result.As<v8::Array>()->Get(context, 0).ToLocalChecked() : result;
 		if (!SetReturn(returnValue, retType, ret)) {
 			if (tryCatch.HasCaught()) {
 				ReportException(tryCatch.Message());
@@ -3114,9 +3112,10 @@ namespace v8lm {
 
 		if (refParamsCount > 0) {
 			v8::Local<v8::Array> resultArray = v8::Array::New(isolate, 1 + refParamsCount);
-			resultArray->Set(context, 0, result).Check();
-
+			
 			int k = 0;
+			
+			resultArray->Set(context, k++, result).Check(); // retObj ref taken by array
 
 			for (size_t i = 0, j = paramsStartIndex; i < paramCount; ++i) {
 				const PropertyHandle paramType = paramTypes[i];
@@ -3130,8 +3129,8 @@ namespace v8lm {
 					return;
 				}
 
-				resultArray->Set(context, ++k, ref).Check();
-				if (k == refParamsCount) {
+				resultArray->Set(context, k++, ref).Check();
+				if (k >= refParamsCount + 1) {
 					break;
 				}
 			}
