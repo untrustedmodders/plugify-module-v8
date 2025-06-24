@@ -2441,148 +2441,146 @@ namespace v8lm {
 		}
 	}
 
-	void V8LanguageModule::BeginExternalCall(ValueType retType, ArgsScope& a) {
-		if (ValueUtils::IsHiddenParam(retType)) {
-			void* value;
-			switch (retType) {
-				case ValueType::String: {
-					value = new plg::string();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::Any: {
-					value = new plg::any();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayBool: {
-					value = new plg::vector<bool>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayChar8: {
-					value = new plg::vector<char>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayChar16: {
-					value = new plg::vector<char16_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayInt8: {
-					value = new plg::vector<int8_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayInt16: {
-					value = new plg::vector<int16_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayInt32: {
-					value = new plg::vector<int32_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayInt64: {
-					value = new plg::vector<int64_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayUInt8: {
-					value = new plg::vector<uint8_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayUInt16: {
-					value = new plg::vector<uint16_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayUInt32: {
-					value = new plg::vector<uint32_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayUInt64: {
-					value = new plg::vector<uint64_t>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayPointer: {
-					value = new plg::vector<void*>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayFloat: {
-					value = new plg::vector<float>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayDouble: {
-					value = new plg::vector<double>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayString: {
-					value = new plg::vector<plg::string>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayAny: {
-					value = new plg::vector<plg::any>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayVector2: {
-					value = new plg::vector<plg::vec2>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayVector3: {
-					value = new plg::vector<plg::vec3>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayVector4: {
-					value = new plg::vector<plg::vec4>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::ArrayMatrix4x4: {
-					value = new plg::vector<plg::mat4x4>();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::Vector2: {
-					value = new plg::vec2();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::Vector3: {
-					value = new plg::vec3();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::Vector4: {
-					value = new plg::vec4();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				case ValueType::Matrix4x4: {
-					value = new plg::mat4x4();
-					a.storage.emplace_back(value, retType);
-					break;
-				}
-				default:
-					_provider->Log(std::format(LOG_PREFIX "BeginExternalCall unsupported type {:#x}", static_cast<uint8_t>(retType)), Severity::Fatal);
-					std::terminate();
-					break;
+	void V8LanguageModule::BeginExternalCall(ValueType retType, ArgsScope& a) const {
+		void* value;
+		switch (retType) {
+			case ValueType::String: {
+				value = new plg::string();
+				a.storage.emplace_back(value, retType);
+				break;
 			}
-
-			a.params.AddArgument(value);
+			case ValueType::Any: {
+				value = new plg::any();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayBool: {
+				value = new plg::vector<bool>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayChar8: {
+				value = new plg::vector<char>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayChar16: {
+				value = new plg::vector<char16_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayInt8: {
+				value = new plg::vector<int8_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayInt16: {
+				value = new plg::vector<int16_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayInt32: {
+				value = new plg::vector<int32_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayInt64: {
+				value = new plg::vector<int64_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayUInt8: {
+				value = new plg::vector<uint8_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayUInt16: {
+				value = new plg::vector<uint16_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayUInt32: {
+				value = new plg::vector<uint32_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayUInt64: {
+				value = new plg::vector<uint64_t>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayPointer: {
+				value = new plg::vector<void*>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayFloat: {
+				value = new plg::vector<float>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayDouble: {
+				value = new plg::vector<double>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayString: {
+				value = new plg::vector<plg::string>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayAny: {
+				value = new plg::vector<plg::any>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayVector2: {
+				value = new plg::vector<plg::vec2>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayVector3: {
+				value = new plg::vector<plg::vec3>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayVector4: {
+				value = new plg::vector<plg::vec4>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::ArrayMatrix4x4: {
+				value = new plg::vector<plg::mat4x4>();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::Vector2: {
+				value = new plg::vec2();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::Vector3: {
+				value = new plg::vec3();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::Vector4: {
+				value = new plg::vec4();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			case ValueType::Matrix4x4: {
+				value = new plg::mat4x4();
+				a.storage.emplace_back(value, retType);
+				break;
+			}
+			default:
+				_provider->Log(std::format(LOG_PREFIX "BeginExternalCall unsupported type {:#x}", static_cast<uint8_t>(retType)), Severity::Fatal);
+				std::terminate();
+				break;
 		}
+
+		a.params.AddArgument(value);
 	}
 
 	v8::Local<v8::Value> V8LanguageModule::MakeExternalCallWithObject(PropertyHandle retType, JitCall::CallingFunc func, const ArgsScope& a, JitCall::Return& ret) {
@@ -3082,13 +3080,15 @@ namespace v8lm {
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 		const auto retType = method.GetReturnType();
-		const size_t paramsStartIndex = plugify::ValueUtils::IsHiddenParam(retType.GetType()) ? 1 : 0;
+		const bool hasHiddenParam = ValueUtils::IsHiddenParam(retType.GetType());
 		int refParamsCount = 0;
 
-		ArgsScope a(1 + paramCount);
+		ArgsScope a(hasHiddenParam + paramCount);
 		JitCall::Return r;
 
-		BeginExternalCall(retType.GetType(), a);
+		if (hasHiddenParam) {
+			BeginExternalCall(retType.GetType(), a);
+		}
 
 		for (size_t i = 0; i < paramCount; ++i) {
 			const PropertyHandle paramType = paramTypes[i];
@@ -3117,7 +3117,7 @@ namespace v8lm {
 			
 			resultArray->Set(context, k++, result).Check(); // retObj ref taken by array
 
-			for (size_t i = 0, j = paramsStartIndex; i < paramCount; ++i) {
+			for (size_t i = 0, j = hasHiddenParam; i < paramCount; ++i) {
 				const PropertyHandle paramType = paramTypes[i];
 				if (!paramType.IsReference()) {
 					continue;

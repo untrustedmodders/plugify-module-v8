@@ -137,7 +137,7 @@ namespace v8lm {
 			~ArgsScope();
 		};
 		
-		void BeginExternalCall(plugify::ValueType retType, ArgsScope& a);
+		void BeginExternalCall(plugify::ValueType retType, ArgsScope& a) const;
 		v8::Local<v8::Value> MakeExternalCallWithObject(plugify::PropertyHandle retType, plugify::JitCall::CallingFunc func, const ArgsScope& a, plugify::JitCall::Return& ret);
 		bool PushObjectAsParam(plugify::PropertyHandle paramType, v8::Local<v8::Value> item, ArgsScope& a);
 		bool PushObjectAsRefParam(plugify::PropertyHandle paramType, v8::Local<v8::Value> item, ArgsScope& a);
