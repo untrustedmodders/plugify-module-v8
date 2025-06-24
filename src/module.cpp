@@ -1272,8 +1272,7 @@ namespace v8lm {
 
 	template<typename T>
 	void* V8LanguageModule::CreateValue(v8::Local<v8::Value> item) {
-		auto value = ValueFromObject<T>(item);
-		if (value) {
+		if (auto value = ValueFromObject<T>(item)) {
 			return new T(std::move(*value));
 		}
 		return nullptr;
@@ -1281,8 +1280,7 @@ namespace v8lm {
 
 	template<typename T>
 	void* V8LanguageModule::CreateArray(v8::Local<v8::Value> item) {
-		auto array = ArrayFromObject<T>(item);
-		if (array) {
+		if (auto array = ArrayFromObject<T>(item)) {
 			return new plg::vector<T>(std::move(*array));
 		}
 		return nullptr;
