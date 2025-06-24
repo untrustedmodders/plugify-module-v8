@@ -3474,7 +3474,7 @@ namespace v8lm {
 				std::string_view funcName = method.GetFunctionName();
 				if (const auto pos = funcName.find('.'); pos != std::string::npos) {
 					className = funcName.substr(0, pos);
-					methodName = std::string_view(funcName.begin() + static_cast<int>(pos + 1), funcName.end());
+					methodName = funcName.substr(pos + 1);
 				} else {
 					methodName = funcName;
 				}
