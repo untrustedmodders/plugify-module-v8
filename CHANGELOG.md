@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.1.1](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.0...v1.1.1) (2025-06-24)
+
+
+### Bug Fixes
+
+* add cmake versioning ([6fe521f](https://github.com/untrustedmodders/plugify-module-v8/commit/6fe521fe819930721e2c7d350f7427d09760ce77))
+* avoid allocation of return buffer if not needed ([974f6e7](https://github.com/untrustedmodders/plugify-module-v8/commit/974f6e7f305106b9dfed8080296332b9276aa4f9))
+* cmake typo ([657c974](https://github.com/untrustedmodders/plugify-module-v8/commit/657c974d9e75cc137a62173bc2f5630e83f138e6))
+* refCount check ([8f667f6](https://github.com/untrustedmodders/plugify-module-v8/commit/8f667f61018eecbfcda0e329f7195122384b7fe2))
+* replace reinterpret_cast by static_cast ([4897961](https://github.com/untrustedmodders/plugify-module-v8/commit/4897961e47fa6dd13f7905e1fdc9d8226623f00c))
+* small refactor for mingw ([4c9cc78](https://github.com/untrustedmodders/plugify-module-v8/commit/4c9cc78009b2674c7b44d01c62dc395b5fb2a454))
+* update plugify ([07a81bb](https://github.com/untrustedmodders/plugify-module-v8/commit/07a81bb7d65e1a6eb4fd891ef0ab502350d77c82))
+* update plugify ([8bf9be8](https://github.com/untrustedmodders/plugify-module-v8/commit/8bf9be8b3cea1ea44e4af5a9ae55b4b886c234d8))
+* update plugify ([caafab4](https://github.com/untrustedmodders/plugify-module-v8/commit/caafab4bc7e0796e22e17a6ee74b18a5562dde8d))
+* update plugify ([75407ec](https://github.com/untrustedmodders/plugify-module-v8/commit/75407ec08ffb423642ad236512a90c3873e0ce11))
+* update plugify ([61f5e18](https://github.com/untrustedmodders/plugify-module-v8/commit/61f5e182b8e5db4803d58993c21592dcea07cab2))
+* update plugify ([c7a0788](https://github.com/untrustedmodders/plugify-module-v8/commit/c7a07880f7d9e2e476436c0cff1634fbe2b50d6a))
+* update plugify and clang tools ([0e24512](https://github.com/untrustedmodders/plugify-module-v8/commit/0e24512b71037c9f2e590b080965c7c208c9a2fe))
+* update version naming ([b575c3a](https://github.com/untrustedmodders/plugify-module-v8/commit/b575c3abd2448b0df237a9cf8b5258eebb9b75bb))
+
 ## [1.1.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.0.6...v1.1.0) (2025-03-27)
 
 
