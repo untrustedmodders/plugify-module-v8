@@ -3672,8 +3672,7 @@ namespace v8lm {
 	}
 
 	void V8LanguageModule::GenerateEnum(plugify::PropertyHandle paramType) {
-		const auto prototype = paramType.GetPrototype();
-		if (prototype) {
+		if (const auto prototype = paramType.GetPrototype()) {
 			GenerateEnum(prototype);
 		}
 
@@ -3864,7 +3863,7 @@ namespace v8lm {
 			}
 
 			v8::Local<v8::Script> script = compiledScript.ToLocalChecked();
-			v8::MaybeLocal<v8::Value> returnVal = script->Run(context);
+			[[maybe_unused]] v8::MaybeLocal<v8::Value> returnVal = script->Run(context);
 			if (tryCatch.HasCaught()) {
 				ReportException(tryCatch.Message());
 				return std::format("Can not execute '{}'", moduleName);
@@ -3990,9 +3989,6 @@ namespace v8lm {
 	}
 
 	void V8LanguageModule::SearchModule(const v8::FunctionCallbackInfo<v8::Value>& info) {
-		v8::Isolate* isolate = info.GetIsolate();
-		v8::Local<v8::Context> context = isolate->GetCurrentContext();
-
 		std::string moduleName = ToString(info[0]);
 		fs::path requiringDir = ToString(info[1]);
 
@@ -4003,9 +3999,6 @@ namespace v8lm {
 	}
 
 	void V8LanguageModule::LoadModule(const v8::FunctionCallbackInfo<v8::Value>& info) {
-		v8::Isolate* isolate = info.GetIsolate();
-		v8::Local<v8::Context> context = isolate->GetCurrentContext();
-
 		fs::path path = ToString(info[0]);
 		std::string content;
 		if (!_moduleLoader->Load(path, content)) {
