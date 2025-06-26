@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.2...v1.1.3) (2025-06-26)
+
+
+### Bug Fixes
+
+* remove default build type ([e0aa289](https://github.com/untrustedmodders/plugify-module-v8/commit/e0aa289240491d275038d3f73a8f348aa9d190ea))
+
 ## [1.1.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.1...v1.1.2) (2025-06-26)
 
 
