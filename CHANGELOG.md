@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.1...v1.1.2) (2025-06-26)
+
+
+### Bug Fixes
+
+* action build on windows ([b0d66ee](https://github.com/untrustedmodders/plugify-module-v8/commit/b0d66ee2a89ae8700229ea9fd27a6b182cd9e9e9))
+
 ## [1.1.1](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.0...v1.1.1) (2025-06-24)
 
 
