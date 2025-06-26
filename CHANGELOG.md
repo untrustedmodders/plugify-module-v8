@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.4](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.3...v1.1.4) (2025-06-26)
+
+
+### Bug Fixes
+
+* add default build type ([9120a91](https://github.com/untrustedmodders/plugify-module-v8/commit/9120a9120ed9114b519ea484edbe28e169da1a85))
+* update arch tags for action build ([b8d32c6](https://github.com/untrustedmodders/plugify-module-v8/commit/b8d32c68349b90f06744a8e7383be79ce2b6c8bd))
+
 ## [1.1.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.2...v1.1.3) (2025-06-26)
 
 
