@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.6](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.5...v1.1.6) (2025-08-01)
+
+
+### Bug Fixes
+
+* add strerror include ([1ab62c2](https://github.com/untrustedmodders/plugify-module-v8/commit/1ab62c2289315fe5c922ab2acfd65ce972ad9716))
+
 ## [1.1.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.4...v1.1.5) (2025-08-01)
 
 
