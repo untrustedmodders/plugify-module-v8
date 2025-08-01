@@ -1,5 +1,6 @@
 #include "module_loader.hpp"
 #include <fstream>
+#include <cstring>
 
 using namespace v8lm;
 
@@ -76,7 +77,7 @@ bool ModuleLoader::Search(const fs::path& requiredDir, const std::string& requir
 bool ModuleLoader::Load(const fs::path& path, std::string& content) {
 	std::ifstream file(path, std::ios::binary);
 	if (!file.is_open()) {
-		content = strerror(errno);
+		content = std::strerror(errno);
 		return false;
 	}
 	content = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
