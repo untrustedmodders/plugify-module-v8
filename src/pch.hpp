@@ -21,5 +21,3 @@
 
 #include <filesystem>
 namespace fs = std::filesystem;
-
-#include <plugify/compat_format.hpp>

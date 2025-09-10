@@ -41,7 +41,7 @@ namespace builtin {
 		}
 
 		void ConsoleLog(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			Log<plugify::Severity::None>(args);
+			Log<plugify::Severity::Unknown>(args);
 		}
 
 		void ConsoleInfo(const v8::FunctionCallbackInfo<v8::Value>& args) {

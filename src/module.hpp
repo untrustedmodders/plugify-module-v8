@@ -1,55 +1,33 @@
+#pragma once
+
 #include "module_loader.hpp"
 #include "task_scheduler.hpp"
 
-#include <plugify/any.hpp>
-#include <plugify/jit/call.hpp>
-#include <plugify/jit/callback.hpp>
+#include <plugify/call.hpp>
+#include <plugify/callback.hpp>
 #include <plugify/language_module.hpp>
-#include <plugify/log.hpp>
+#include <plugify/logger.hpp>
 #include <plugify/method.hpp>
-#include <plugify/module.hpp>
-#include <plugify/plugify_provider.hpp>
-#include <plugify/plugin.hpp>
-#include <plugify/plugin_descriptor.hpp>
-#include <plugify/plugin_reference_descriptor.hpp>
-#include <plugify/string.hpp>
-#include <plugify/vector.hpp>
+#include <plugify/extension.hpp>
+#include <plugify/provider.hpp>
+#include <plugify/enum_object.hpp>
+#include <plugify/enum_value.hpp>
+
+#include <plg/any.hpp>
+#include <plg/string.hpp>
+#include <plg/vector.hpp>
 
 #include <v8.h>
 
+using namespace plugify;
+
 namespace v8lm {
-	// std::hash<std::filesystem::path> not in the C++20 standard by default
-	struct path_hash {
-		auto operator()(const fs::path& path) const noexcept {
-			return hash_value(path);
-		}
-	};
-
-	// heterogeneous lookup
-	struct string_hash {
-		using is_transparent = void;
-		[[nodiscard]] size_t operator()(const char* txt) const {
-			return std::hash<std::string_view>{}(txt);
-		}
-		[[nodiscard]] size_t operator()(std::string_view txt) const {
-			return std::hash<std::string_view>{}(txt);
-		}
-		[[nodiscard]] size_t operator()(const std::string& txt) const {
-			return std::hash<std::string>{}(txt);
-		}
-	};
-
-	using ExecuteModuleError = std::string;
-	using ExecuteModuleData = v8::Local<v8::Module>;
-	using ExecuteModuleScript = v8::Local<v8::Script>;
-	using ExecuteModuleResult = std::variant<ExecuteModuleError, ExecuteModuleData,ExecuteModuleScript>;
-
 	using JsFunction = std::shared_ptr<v8::Global<v8::Function>>;
 	using JsExternalMap = std::unordered_map<void*, JsFunction>;
 	using JsExceptionList = std::vector<std::pair<v8::Global<v8::Promise>, v8::Global<v8::Message>>>;
 
 	struct JsMethodData {
-		plugify::JitCallback jitCallback;
+		JitCallback jitCallback;
 		JsFunction jsFunction;
 	};
 
@@ -68,30 +46,32 @@ namespace v8lm {
 		Matrix4x4
 	};
 
-	class V8LanguageModule final : public plugify::ILanguageModule {
+	class V8LanguageModule final : public ILanguageModule {
 	public:
 		V8LanguageModule() = default;
 
 		// ILanguageModule
-		plugify::InitResult Initialize(std::weak_ptr<plugify::IPlugifyProvider> provider, plugify::ModuleHandle module) override;
+		Result<InitData> Initialize(const Provider& provider, const Extension& module) override;
 		void Shutdown() override;
-		void OnUpdate(plugify::DateTime dt) override;
-		plugify::LoadResult OnPluginLoad(plugify::PluginHandle plugin) override;
-		void OnPluginStart(plugify::PluginHandle plugin) override;
-		void OnPluginUpdate(plugify::PluginHandle plugin, plugify::DateTime dt) override;
-		void OnPluginEnd(plugify::PluginHandle plugin) override;
-		void OnMethodExport(plugify::PluginHandle plugin) override;
+		void OnUpdate(std::chrono::milliseconds dt) override;
+
+		Result<LoadData> OnPluginLoad(const Extension& plugin) override;
+		void OnPluginStart(const Extension& plugin) override;
+		void OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds dt) override;
+		void OnPluginEnd(const Extension& plugin) override;
+		void OnMethodExport(const Extension& plugin) override;
 		bool IsDebugBuild() override;
 
 		static V8LanguageModule* Get(v8::Isolate* isolate) { return static_cast<V8LanguageModule*>(isolate->GetData(0)); }
-		const std::shared_ptr<plugify::IPlugifyProvider>& GetProvider() const { return _provider; }
+		const std::unique_ptr<Provider>& GetProvider() const { return _provider; }
 
 	private:
-		v8::MaybeLocal<v8::Module> CreateInternalModule(plugify::PluginHandle plugin);
-		v8::MaybeLocal<v8::Module> CreateExternalModule(plugify::PluginHandle plugin);
-		void GenerateEnum(plugify::PropertyHandle paramType);
-		void GenerateEnum(plugify::MethodHandle method);
-		v8::Local<v8::Function> FindJavascriptMethod(plugify::MemAddr addr) const;
+		Result<JsMethodData> GenerateMethodExport(const Method& method, v8::Local<v8::Context> context, v8::Local<v8::Object> exports);
+		v8::MaybeLocal<v8::Module> CreateInternalModule(const Extension& plugin);
+		v8::MaybeLocal<v8::Module> CreateExternalModule(const Extension& plugin);
+		void GenerateEnum(const Property& paramType);
+		void GenerateEnum(const Method& method);
+		v8::Local<v8::Function> FindJavascriptMethod(MemAddr addr) const;
 		void AddToFunctionsMap(void* funcAddr, const JsFunction& funcObj);
 		JsFunction FindExternal(void* funcAddr) const;
 		void* FindInternal(v8::Local<v8::Function> object) const;
@@ -112,8 +92,8 @@ namespace v8lm {
 		v8::Local<v8::Value> CreateJsObjectList(std::span<const T> arrayArg);
 		template<typename T>
 		v8::Local<v8::Value> CreateJsObjectList(const plg::vector<T>& arrayArg);
-		std::optional<void*> GetOrCreateFunctionValue(plugify::MethodHandle method, v8::Local<v8::Value> value);
-		v8::Local<v8::Value> GetOrCreateFunctionObject(plugify::MethodHandle method, void* funcAddr);
+		std::optional<void*> GetOrCreateFunctionValue(const Method& method, v8::Local<v8::Value> value);
+		v8::Local<v8::Value> GetOrCreateFunctionObject(const Method& method, void* funcAddr);
 		template<typename T>
 		std::optional<T> GetObjectAttrAsValue(v8::Local<v8::Object> object, std::string_view attrName);
 		bool IsSubclassOf(v8::Local<v8::Context> context, v8::Local<v8::Function> childClass, v8::Local<v8::Function> parentClass);
@@ -123,25 +103,25 @@ namespace v8lm {
 		template<typename T>
 		void* CreateArray(v8::Local<v8::Value> value);
 
-		void SetFallbackReturn(plugify::ValueType retType, const plugify::JitCallback::Return* ret);
-		bool SetReturn(v8::Local<v8::Value> result, plugify::PropertyHandle retType, const plugify::JitCallback::Return* ret);
-		bool SetRefParam(v8::Local<v8::Value> object, plugify::PropertyHandle paramType, const plugify::JitCallback::Parameters* params, size_t index);
-		v8::Local<v8::Value> ParamToObject(plugify::PropertyHandle paramType, const plugify::JitCallback::Parameters* params, size_t index);
-		v8::Local<v8::Value> ParamRefToObject(plugify::PropertyHandle paramType, const plugify::JitCallback::Parameters* params, size_t index);
+		void SetFallbackReturn(ValueType retType, ReturnSlot& ret);
+		bool SetReturn(v8::Local<v8::Value> result, const Property& retType, ReturnSlot& ret);
+		bool SetRefParam(v8::Local<v8::Value> object, const Property& paramType, ParametersSpan& params, size_t index);
+		v8::Local<v8::Value> ParamToObject(const Property& paramType, ParametersSpan& params, size_t index);
+		v8::Local<v8::Value> ParamRefToObject(const Property& paramType, ParametersSpan& params, size_t index);
 
 		struct ArgsScope {
-			plugify::JitCall::Parameters params;
-			std::vector<std::pair<void*, plugify::ValueType>> storage; // used to store array temp memory
+			Parameters params;
+			std::vector<std::pair<void*, ValueType>> storage; // used to store array temp memory
 
 			explicit ArgsScope(size_t size);
 			~ArgsScope();
 		};
 		
-		void BeginExternalCall(plugify::ValueType retType, ArgsScope& a) const;
-		v8::Local<v8::Value> MakeExternalCallWithObject(plugify::PropertyHandle retType, plugify::JitCall::CallingFunc func, const ArgsScope& a, plugify::JitCall::Return& ret);
-		bool PushObjectAsParam(plugify::PropertyHandle paramType, v8::Local<v8::Value> item, ArgsScope& a);
-		bool PushObjectAsRefParam(plugify::PropertyHandle paramType, v8::Local<v8::Value> item, ArgsScope& a);
-		v8::Local<v8::Value> StorageValueToObject(plugify::PropertyHandle paramType, const ArgsScope& a, size_t index);
+		void BeginExternalCall(ValueType retType, ArgsScope& a) const;
+		v8::Local<v8::Value> MakeExternalCallWithObject(const Property& retType, JitCall::CallingFunc func, const ArgsScope& a, Return& ret);
+		bool PushObjectAsParam(const Property& paramType, v8::Local<v8::Value> item, ArgsScope& a);
+		bool PushObjectAsRefParam(const Property& paramType, v8::Local<v8::Value> item, ArgsScope& a);
+		v8::Local<v8::Value> StorageValueToObject(const Property& paramType, const ArgsScope& a, size_t index);
 
 		struct ModuleInfo {
 			std::unordered_map<std::string, v8::Global<v8::Module>> resolveCache;
@@ -149,7 +129,7 @@ namespace v8lm {
 			v8::Global<v8::Module> module;
 		};
 
-		ExecuteModuleResult ExecuteModule(v8::Local<v8::Context> context, const fs::path& requiringDir, const std::string& moduleName);
+		Result<v8::Local<v8::Data>> ExecuteModule(v8::Local<v8::Context> context, const fs::path& requiringDir, const std::string& moduleName);
 		v8::MaybeLocal<v8::Module> LoadModule(v8::Local<v8::Context> context, const fs::path& path, v8::Local<v8::Promise::Resolver> resolver);
 		bool LoadFile(const fs::path& requiringDir, const std::string& moduleName, fs::path& path, std::string& content);
 		v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> context, const fs::path& path);
@@ -202,8 +182,8 @@ namespace v8lm {
 		fs::path ToPath(v8::Local<v8::Value> value) const;
 		fs::path ToPathOr(v8::Local<v8::Value> value, fs::path or_path) const;
 
-		void InternalCall(plugify::MethodHandle method, plugify::MemAddr data, const plugify::JitCallback::Parameters* params, size_t count, const plugify::JitCallback::Return* ret);
-		void ExternalCall(plugify::MethodHandle method, plugify::MemAddr data, const plugify::JitCallback::Parameters* params, size_t count, const plugify::JitCallback::Return* ret);
+		void InternalCall(const Method& method, MemAddr data, uint64_t* params, size_t count, void* ret);
+		void ExternalCall(const Method& method, MemAddr data, uint64_t* parameters, size_t count, void* ret);
 
 		uint32_t AddTask(std::chrono::milliseconds delay, Action action, bool repeat = false) {
 			return _taskScheduler.AddTask(delay, std::move(action), repeat);
@@ -214,8 +194,7 @@ namespace v8lm {
 		}
 
 	private:
-		std::shared_ptr<plugify::IPlugifyProvider> _provider;
-		std::shared_ptr<asmjit::JitRuntime> _jitRuntime;
+		std::unique_ptr<Provider> _provider;
 		std::unique_ptr<v8::ArrayBuffer::Allocator> _allocator;
 		v8::Isolate* _isolate;
 		v8::Global<v8::Context> _context;
@@ -233,16 +212,16 @@ namespace v8lm {
 			v8::Global<v8::Function> start;
 			v8::Global<v8::Function> end;
 		};
-		std::map<plugify::UniqueId, PluginData> _pluginsMap;
+		std::map<UniqueId, PluginData> _pluginsMap;
 		std::vector<JsMethodData> _jsMethods;
 		struct JitHolder {
-			plugify::JitCallback jitCallback;
-			plugify::JitCall jitCall;
+			JitCallback jitCallback;
+			JitCall jitCall;
 		};
 		std::vector<JitHolder> _moduleFunctions;
 		struct ExternalHolder {
-			plugify::JitCallback jitCallback;
-			plugify::JitCall jitCall;
+			JitCallback jitCallback;
+			JitCall jitCall;
 			JsFunction object;
 		};
 		std::vector<ExternalHolder> _externalFunctions;
@@ -250,9 +229,9 @@ namespace v8lm {
 		JsExternalMap _externalMap;
 
 		std::unique_ptr<ModuleLoader> _moduleLoader;
-		std::unordered_map<fs::path, v8::Global<v8::Module>, path_hash> _pathToModule;
+		std::unordered_map<fs::path, v8::Global<v8::Module>, plg::path_hash> _pathToModule;
 		std::unordered_multimap<int, ModuleInfo> _idToModuleInfo;
-		std::unordered_map<fs::path, v8::Global<v8::Promise::Resolver>, path_hash> _dynamicImports;
+		std::unordered_map<fs::path, v8::Global<v8::Promise::Resolver>, plg::path_hash> _dynamicImports;
 		JsExceptionList _failedPromises;
 
 		TaskScheduler _taskScheduler;

@@ -22,8 +22,8 @@ namespace builtin {
 			try {
 				std::filesystem::path path = g_v8lm.ToPath(args[0]);
 
-				const auto& normalizedPath = std::filesystem::weakly_canonical(path).native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(normalizedPath));
+				auto normalizedPath = std::filesystem::weakly_canonical(path);
+				args.GetReturnValue().Set(g_v8lm.MakeString(normalizedPath.native()));
 			} catch (const std::exception& e) {
 				g_v8lm.ThrowException(e.what());
 			}
@@ -41,8 +41,7 @@ namespace builtin {
 			}
 
 			try {
-				const auto& path = result.native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(path));
+				args.GetReturnValue().Set(g_v8lm.MakeString(result.native()));
 			} catch (const std::exception& e) {
 				g_v8lm.ThrowException(e.what());
 			}
@@ -62,8 +61,8 @@ namespace builtin {
 			}
 
 			try {
-				const auto& path = std::filesystem::absolute(result).native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(path));
+				auto path = std::filesystem::absolute(result);
+				args.GetReturnValue().Set(g_v8lm.MakeString(path.native()));
 			} catch (const std::exception& e) {
 				g_v8lm.ThrowException(e.what());
 			}
@@ -99,8 +98,8 @@ namespace builtin {
 				std::filesystem::path fromPath = g_v8lm.ToPath(args[0]);
 				std::filesystem::path toPath = g_v8lm.ToPath(args[1]);
 
-				const auto& relativePath = std::filesystem::relative(toPath, fromPath).native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(relativePath));
+				auto relativePath = std::filesystem::relative(toPath, fromPath);
+				args.GetReturnValue().Set(g_v8lm.MakeString(relativePath.native()));
 			} catch (const std::exception& e) {
 				g_v8lm.ThrowException(e.what());
 			}
@@ -116,8 +115,8 @@ namespace builtin {
 			try {
 				std::filesystem::path path = g_v8lm.ToPath(args[0]);
 
-				const auto& dirPath = path.parent_path().native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(dirPath));
+				auto dirPath = path.parent_path();
+				args.GetReturnValue().Set(g_v8lm.MakeString(dirPath.native()));
 			} catch (const std::exception& e) {
 				g_v8lm.ThrowException(e.what());
 			}
@@ -133,8 +132,8 @@ namespace builtin {
 			try {
 				std::filesystem::path path = g_v8lm.ToPath(args[0]);
 
-				const auto& baseName = path.filename().native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(baseName));
+				auto baseName = path.filename();
+				args.GetReturnValue().Set(g_v8lm.MakeString(baseName.native()));
 			} catch (const std::exception& e) {
 				g_v8lm.ThrowException(e.what());
 			}
@@ -150,8 +149,8 @@ namespace builtin {
 			try {
 				std::filesystem::path path = g_v8lm.ToPath(args[0]);
 
-				const auto& extName = path.extension().native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(extName));
+				auto extName = path.extension();
+				args.GetReturnValue().Set(g_v8lm.MakeString(extName.native()));
 			} catch (const std::exception& e) {
 				g_v8lm.ThrowException(e.what());
 			}

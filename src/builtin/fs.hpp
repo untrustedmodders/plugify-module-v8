@@ -144,7 +144,7 @@ namespace builtin {
 
 				obj->Set(context,
 						 g_v8lm.MakeString("size"),
-						 v8::Number::New(isolate, std::filesystem::file_size(path)))
+						 v8::Number::New(isolate, static_cast<double>(std::filesystem::file_size(path))))
 						.Check();
 
 				obj->Set(context,
@@ -217,7 +217,7 @@ namespace builtin {
 				std::filesystem::path path = g_v8lm.ToPath(args[0]);
 				v8::Local<v8::Array> array = v8::Array::New(isolate);
 
-				size_t i = static_cast<size_t>(-1);
+				uint32_t i = static_cast<uint32_t>(-1);
 				for (const auto& entry : std::filesystem::directory_iterator(path)) {
 					const auto& res = entry.path().native();
 					array->Set(context,

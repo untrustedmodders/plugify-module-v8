@@ -1,7 +1,100 @@
+[![Русский](https://img.shields.io/badge/Русский-%F0%9F%87%B7%F0%9F%87%BA-green?style=for-the-badge)](README_ru.md)
+
 # JavaScript (V8) Language Module for Plugify
 
-API References
---------------
+The Plugify JavaScript Language Module enables developers to write plugins in modern JavaScript (ECMAScript 2023) and run them using the high-performance [V8 engine](https://v8.dev/). With this module, you can harness the flexibility of JavaScript while fully integrating into the Plugify plugin ecosystem.
+
+## Features
+
+- **JavaScript-Powered Plugins**: Write your plugins entirely in JavaScript using familiar syntax and tools.
+- **Seamless Integration**: Integrate JavaScript plugins smoothly into the Plugify system alongside other supported languages.
+- **Cross-Language Communication**: Interact effortlessly with plugins written in C++, Python, Lua, and more.
+- **Sandboxed Execution**: Run JavaScript code safely in a sandboxed V8 environment with controlled access to native APIs.
+
+## Getting Started
+
+### Prerequisites
+
+- JavaScript `ES6` is recommended.
+- Plugify Framework Installed
+
+### Installation
+
+#### Option 1: Install via Plugify Plugin Manager
+
+```bash
+plg install plugify-module-v8
+```
+
+#### Option 2: Manual Installation
+
+1. Install dependencies:  
+
+   a. Windows  
+   > Setting up [CMake tools with Visual Studio Installer](https://learn.microsoft.com/en-us/cpp/build/cmake-projects-in-visual-studio#installation)
+
+   b. Linux:  
+   ```sh
+   sudo apt-get install -y build-essential cmake ninja-build
+   ```
+   
+   c. Mac:  
+   ```sh
+   brew install cmake ninja
+   ```
+
+2. Clone this repository:
+
+   ```bash
+   git clone https://github.com/untrustedmodders/plugify-module-v8.git --recursive
+   ```
+
+3. Build the JavaScript language module:
+
+   ```bash
+   mkdir build && cd build
+   cmake ..
+   cmake --build .
+   ```
+
+### Usage
+
+1. **Integration with Plugify**
+
+   Ensure that your JavaScript language module is available in the same directory as your Plugify setup.
+
+2. **Write JavaScript Plugins**
+
+   Develop your plugins in JavaScript using the Plugify V8 API. Refer to the [Plugify JavaScript Plugin Guide](https://untrustedmodders.github.io/languages/javascript/first-plugin) for detailed instructions.
+
+3. **Build and Install Plugins**
+
+   Put your JavaScript files in a directory accessible to the Plugify core.
+
+4. **Run Plugify**
+
+   Start the Plugify framework, and it will dynamically load your JavaScript plugins.
+
+## Example
+
+```javascript
+import { Plugin } from 'plugify';
+
+export class ExamplePlugin extends Plugin {
+    pluginStart() {
+        console.log('ExamplePlugin::pluginStart');
+    }
+    pluginUpdate(dt) {
+        console.log('ExamplePlugin::pluginUpdate');
+    }
+    pluginEnd() {
+        console.log('ExamplePlugin::pluginEnd');
+    }
+}
+```
+
+## API References
+
 - [`assert`](src/builtin/assert.rs) Provides a set of assertion tests
     - `assert.ok()` Checks if a value is true.
     - `assert.equal()` Checks if two values are equal, using the equal operator (==).
@@ -82,3 +175,15 @@ API References
   - TODO
 - [`zlib`](src/builtin/zlib.rs) To compress or decompress files 
   - TODO
+
+## Documentation
+
+For comprehensive documentation on writing plugins in JavaScript using the Plugify framework, refer to the [Plugify Documentation](https://untrustedmodders.github.io).
+
+## Contributing
+
+Feel free to contribute by opening issues or submitting pull requests. We welcome your feedback and ideas!
+
+## License
+
+This JavaScript (V8) Language Module for Plugify is licensed under the [MIT License](LICENSE).

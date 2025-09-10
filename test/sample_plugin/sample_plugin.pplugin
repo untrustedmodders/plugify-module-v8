@@ -1,21 +1,14 @@
 {
 	"$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/heads/main/schemas/plugin.schema.json",
-	"fileVersion": 1,
 	"version": "0.1.0",
-	"friendlyName": "v8 SamplePlugin",
+	"name": "cross_call_worker",
 	"description": "Node test",
-	"createdBy": "untrustedmodders",
-	"createdByURL": "https://github.com/untrustedmodders/",
-	"docsURL": "",
-	"downloadURL": "",
-	"updateURL": "",
-	"entryPoint": "cross_call_worker.SamplePlugin",
-	"supportedPlatforms": [],
-	"languageModule": {
-		"name": "javascript"
-	},
-	"dependencies": [
-	],
-	"exportedMethods": [
-	]
+	"author": "untrustedmodders",
+	"website": "https://github.com/untrustedmodders/",
+	"license": "MIT",
+	"entry": "cross_call_worker.SamplePlugin",
+	"platforms": [],
+	"language": "javascript",
+	"dependencies": [],
+	"methods": []
 }

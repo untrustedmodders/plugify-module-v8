@@ -75,6 +75,7 @@ bool ModuleLoader::Search(const fs::path& requiredDir, const std::string& requir
 }
 
 bool ModuleLoader::Load(const fs::path& path, std::string& content) {
+    errno = 0;  // Clear errno before operation
 	std::ifstream file(path, std::ios::binary);
 	if (!file.is_open()) {
 		content = std::strerror(errno);

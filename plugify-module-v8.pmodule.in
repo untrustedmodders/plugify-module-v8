@@ -1,15 +1,11 @@
 {
-    "$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/heads/main/schemas/language-module.schema.json",
-    "fileVersion": 1,
-    "version": "${V8LM_VERSION}",
-    "friendlyName": "JavaScript (V8) language module",
-    "language": "javascript",
-    "description": "Adds support for JavaScript plugins",
-    "createdBy": "untrustedmodders",
-    "createdByURL": "https://github.com/untrustedmodders/",
-    "docsURL": "https://github.com/untrustedmodders/plugify-module-v8/README.md",
-    "downloadURL": "https://github.com/untrustedmodders/plugify-module-v8/releases/download/v${V8LM_VERSION}/${V8LM_PACKAGE}.zip",
-    "updateURL": "https://untrustedmodders.github.io/plugify-module-v8/plugify-module-v8.json",
-    "supportedPlatforms": [],
-    "forceLoad": false
+	"$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/heads/main/schemas/language-module.schema.json",
+	"version": "${V8LM_VERSION}",
+	"name": "${V8LM_PACKAGE}",
+	"language": "javascript",
+	"description": "Adds support for JavaScript plugins",
+	"author": "untrustedmodders",
+	"website": "https://github.com/untrustedmodders/",
+	"license": "MIT",
+	"platforms": []
 }

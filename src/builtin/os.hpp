@@ -3,8 +3,8 @@ namespace builtin {
 		// Get the temporary directory path
 		void Tmpdir(const v8::FunctionCallbackInfo<v8::Value>& args) {
 			try {
-				const auto& tmpDir = std::filesystem::temp_directory_path().native();
-				args.GetReturnValue().Set(g_v8lm.MakeString(tmpDir));
+				auto tmpDir = std::filesystem::temp_directory_path();
+				args.GetReturnValue().Set(g_v8lm.MakeString(tmpDir.native()));
 			} catch (...) {
 				g_v8lm.ThrowException("Unable to retrieve temp directory");
 			}
