@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.0.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.6...v2.0.0) (2025-09-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* update for a new plugify
+
+### Features
+
+* update for a new plugify ([e08ba14](https://github.com/untrustedmodders/plugify-module-v8/commit/e08ba140d8944c3b29897dbe909d14bd2b08eca6))
+
+
+### Bug Fixes
+
+* update clang format ([71ff2c3](https://github.com/untrustedmodders/plugify-module-v8/commit/71ff2c3eedaf312cecdc156e31d427a5de6ff51c))
+
 ## [1.1.6](https://github.com/untrustedmodders/plugify-module-v8/compare/v1.1.5...v1.1.6) (2025-08-01)
 
 
