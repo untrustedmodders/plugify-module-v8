@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.0.1...v2.0.2) (2025-09-15)
+
+
+### Bug Fixes
+
+* some improvements ([5a6008f](https://github.com/untrustedmodders/plugify-module-v8/commit/5a6008f86aa4e7549256375c2798f2fe5163d508))
+
 ## [2.0.1](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.0.0...v2.0.1) (2025-09-15)
 
 
