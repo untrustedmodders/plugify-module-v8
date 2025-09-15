@@ -2831,7 +2831,6 @@ namespace v8lm {
 				ThrowTypeError(std::format("MakeExternalCallWithObject unsupported type {:#x}", static_cast<uint8_t>(retType.GetType())));
 				return {};
 		}
-		return {};
 	}
 
 	bool V8LanguageModule::PushObjectAsParam(const Property& paramType, v8::Local<v8::Value> item, ArgsScope& a) {
@@ -2938,8 +2937,6 @@ namespace v8lm {
 				ThrowTypeError(std::format("PushObjectAsParam unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())));
 				return {};
 		}
-
-		return false;
 	}
 
 	bool V8LanguageModule::PushObjectAsRefParam(const Property& paramType, v8::Local<v8::Value> item, ArgsScope& a) {
@@ -3037,8 +3034,6 @@ namespace v8lm {
 				ThrowTypeError(std::format("PushObjectAsRefParam unsupported enum type {:#x}", static_cast<uint8_t>(paramType.GetType())));
 				return {};
 		}
-
-		return false;
 	}
 
 	v8::Local<v8::Value> V8LanguageModule::StorageValueToObject(const Property& paramType, const ArgsScope& a, size_t index) {
