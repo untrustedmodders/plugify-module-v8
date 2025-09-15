@@ -20,6 +20,7 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" VERSION_FILE_CONTENTS)
 string(STRIP "${VERSION_FILE_CONTENTS}" VERSION_FILE_CONTENTS)
 set(V8LM_VERSION "${VERSION_FILE_CONTENTS}" CACHE STRING "Set version name")
 set(V8LM_PACKAGE "v8_module" CACHE STRING "Set package name")
+set(V8LM_STATIC OFF CACHE BOOL "Build v8 as static?")
 string(REPLACE "v" "" V8LM_VERSION "${V8LM_VERSION}")
 string(REGEX REPLACE "[.+-]" ";" V8LM_VERSION_LIST ${V8LM_VERSION})
 list(GET V8LM_VERSION_LIST 0 V8LM_VERSION_MAJOR)
@@ -71,8 +72,7 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE ${V8LM_PCH_FILE})
 #
 # V8 Library
 #
-set(V8LM_EXTERNAL ON)
-if(V8LM_EXTERNAL)
+if(NOT V8LM_STATIC)
     add_library(v8_monolith SHARED IMPORTED)
     set(V8_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/v8/include/")
     if(WIN32)
@@ -138,7 +138,7 @@ target_include_directories(v8_include INTERFACE ${V8_INCLUDE_DIRS})
 if(MSVC)
     target_compile_options(v8_include INTERFACE /wd4100 /wd4244)
 else()
-    target_compile_options(v8_include INTERFACE -Wno-unused-parameter -Wno-conversion)
+    target_compile_options(v8_include INTERFACE -Wno-unused-parameter -Wno-conversion -Wno-template-id-cdtor -Wno-shadow)
 endif()
 
 target_link_directories(${PROJECT_NAME} PRIVATE ${V8_LIBRARY_DIRS})
@@ -181,7 +181,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
        V8LM_IS_BIG_ENDIAN=$<STREQUAL:${CMAKE_CXX_BYTE_ORDER},BIG_ENDIAN>
        V8LM_IS_DEBUG=$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>
        V8LM_IS_RELEASE=$<STREQUAL:${CMAKE_BUILD_TYPE},Release>
-       V8LM_EXTERNAL=$<BOOL:${V8LM_EXTERNAL}>
+       V8LM_STATIC=$<BOOL:${V8LM_STATIC}>
 )
 
 # Generate the embedded default (welcome) source.

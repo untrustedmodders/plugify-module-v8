@@ -3239,7 +3239,7 @@ namespace v8lm {
 		// at shutdown.
 		v8::V8::SetFlagsFromString("--expose_gc");
 #endif
-#ifndef V8LM_EXTERNAL
+#if V8LM_STATIC
 		const fs::path icuDataPath = libPath / "icudtl.dat";
 		platform = v8::platform::NewDefaultPlatform();
 		if (!v8::V8::InitializeICUDefaultLocation(nullptr, fs::exists(icuDataPath, ec) ? plg::as_string(icuDataPath).c_str() : nullptr)) {
@@ -3407,7 +3407,7 @@ namespace v8lm {
 		_context.Reset();
 		_isolate->Dispose();
 		_allocator.reset();
-#ifndef V8LM_EXTERNAL
+#if V8LM_STATIC
 		v8::V8::Dispose();
 		v8::V8::DisposePlatform();
 		platform.reset();
