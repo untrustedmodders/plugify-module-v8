@@ -3328,7 +3328,7 @@ namespace v8lm {
 		MethodBindingHelper<&V8LanguageModule::LoadModule>::Bind(_isolate, context, global, v8::String::NewFromUtf8Literal(_isolate, "__plgjsLoadModule"), self);
 		MethodBindingHelper<&V8LanguageModule::FindModule>::Bind(_isolate, context, global, v8::String::NewFromUtf8Literal(_isolate, "__plgjsFindModule"), self);
 
-		ExecuteModule(context, libPath, "pps.js");
+		[[maybe_unused]] auto _ = ExecuteModule(context, libPath, "pps.js");
 
 		_require.Reset(_isolate, pps->Get(context, v8::String::NewFromUtf8Literal(_isolate, "__require")).ToLocalChecked().As<v8::Function>());
 		_getESMMain.Reset(_isolate, pps->Get(context, v8::String::NewFromUtf8Literal(_isolate, "getESMMain")).ToLocalChecked().As<v8::Function>());
