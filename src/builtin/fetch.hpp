@@ -93,7 +93,7 @@ namespace builtin {
 					uc.dwUrlPathLength = static_cast<DWORD>(-1);
 					uc.dwExtraInfoLength = static_cast<DWORD>(-1);
 
-					if (!WinHttpCrackUrl(url.c_str(), url.length(), 0, &uc)) {
+					if (!WinHttpCrackUrl(url.c_str(), static_cast<DWORD>(url.length()), 0, &uc)) {
 						throw std::runtime_error("Failed to parse URL");
 					}
 

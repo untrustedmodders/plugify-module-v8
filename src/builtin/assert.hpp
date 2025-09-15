@@ -42,7 +42,7 @@ namespace builtin {
 
 		// equal function
 		void Equal(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
+			//v8::Isolate* isolate = args.GetIsolate();
 			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 3 || !args[0]->IsString() || !args[1]->IsString() || !args[2]->IsString()) {
@@ -59,7 +59,7 @@ namespace builtin {
 
 		// notEqual function
 		void NotEqual(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
+			//v8::Isolate* isolate = args.GetIsolate();
 			//v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
 			if (args.Length() < 3 || !args[0]->IsString() || !args[1]->IsString() || !args[2]->IsString()) {

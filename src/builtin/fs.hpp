@@ -9,11 +9,12 @@ namespace builtin {
 	// Helper function to convert `std::chrono::time_point` to ISO 8601 string
 	std::string ToIso8601(const std::filesystem::file_time_type& time) {
 		using namespace std::chrono;
-		auto tp = time_point_cast<system_clock::duration>(time - std::filesystem::file_time_type::clock::now() + system_clock::now());
-		std::time_t time_t = system_clock::to_time_t(tp);
-		std::ostringstream ss;
-		ss << std::put_time(std::gmtime(&time_t), "%Y-%m-%dT%H:%M:%S.%fZ");
-		return ss.str();
+		auto tp = time_point_cast<system_clock::duration>(
+			time - std::filesystem::file_time_type::clock::now() + system_clock::now()
+		);
+		auto s = floor<milliseconds>(tp);
+		auto subseconds = duration_cast<milliseconds>(tp - s).count();
+		return std::format("{:%FT%T}.{:03d}Z", floor<seconds>(tp), subseconds);
 	}
 
 	namespace fs {

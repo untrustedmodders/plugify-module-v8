@@ -31,7 +31,7 @@ namespace builtin {
 
 		// Join: Concatenate multiple paths into one
 		void Join(const v8::FunctionCallbackInfo<v8::Value>& args) {
-			v8::Isolate* isolate = args.GetIsolate();
+			//v8::Isolate* isolate = args.GetIsolate();
 
 			auto paths = ConvertArgsToPaths(args);
 

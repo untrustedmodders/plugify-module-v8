@@ -128,70 +128,71 @@ namespace v8lm {
 		// -1		Encoding error
 		// -2		Invalid multibyte sequence
 		// -3		Surrogate pair
-		std::pair<short, char16_t> ConvertUtf8ToUtf16(std::span<const char> sequence) {
+		std::pair<int, char16_t> ConvertUtf8ToUtf16(std::string_view sequence) {
 			const auto c8toc16 = [](char ch) -> char16_t { return static_cast<char16_t>(static_cast<uint8_t>(ch)); };
 
 			if (sequence.empty()) {
-				return { -2, {} };
+				return { -2, u'\0' };
 			}
 			const char seqCh0 = sequence[0];
 			if (seqCh0 == '\0') {
-				return { 0, 0 };
+				return { 0, u'\0' };
 			}
 			if ((seqCh0 & 0b11111000) == 0b11110000) {
-				return { -3, {} };
+				return { -3, u'\0' };
 			}
 			if ((seqCh0 & 0b11110000) == 0b11100000) {
 				if (sequence.size() < 3) {
-					return { -2, {} };
+					return { -2, u'\0' };
 				}
 				const char seqCh1 = sequence[1];
 				const char seqCh2 = sequence[2];
 				if ((seqCh1 & 0b11000000) != 0b10000000 || (seqCh2 & 0b11000000) != 0b10000000) {
-					return { -2, {} };
+					return { -2, u'\0' };
 				}
 				const char16_t ch = (c8toc16(seqCh0 & 0b00001111) << 12) | (c8toc16(seqCh1 & 0b00111111) << 6) | c8toc16(seqCh2 & 0b00111111);
 				if (0xD800 <= static_cast<uint16_t>(ch) && static_cast<uint16_t>(ch) < 0xE000) {
-					return { -1, {} };
+					return { -1, u'\0' };
 				}
 				return { 3, ch };
 			}
 			if ((seqCh0 & 0b11100000) == 0b11000000) {
 				if (sequence.size() < 2) {
-					return { -2, {} };
+					return { -2, u'\0' };
 				}
 				const char seqCh1 = sequence[1];
 				if ((seqCh1 & 0b11000000) != 0b10000000) {
-					return { -2, {} };
+					return { -2, u'\0' };
 				}
-				return { 2, (c8toc16(seqCh0 & 0b00011111) << 6) | c8toc16(seqCh1 & 0b00111111) };
+				const char16_t ch = (c8toc16(seqCh0 & 0b00011111) << 6) | c8toc16(seqCh1 & 0b00111111);
+				return { 2, ch };
 			}
 			if ((seqCh0 & 0b10000000) == 0b00000000) {
 				return { 1, c8toc16(seqCh0) };
 			}
-			return { -1, {} };
+			return { -1, u'\0' };
 		}
 
 		// Return codes:
 		// [1, 3]	Number bytes returned
 		// 0		For 0x0000 symbol
 		// -1		Surrogate pair
-		std::pair<short, std::array<char, 4>> ConvertUtf16ToUtf8(char16_t ch16) {
+		std::pair<int, std::array<char, 4>> ConvertUtf16ToUtf8(char16_t ch16) {
 			const auto c16toc8 = [](char16_t ch) -> char { return static_cast<char>(static_cast<uint8_t>(ch)); };
 
-			if (ch16 == 0) {
+			if (ch16 == u'\0') {
 				return { 0, {} };
 			}
 			if (static_cast<uint16_t>(ch16) < 0x80) {
-				return { 1, {c16toc8(ch16), '\0'} };
+				return { 1, { c16toc8(ch16), '\0' } };
 			}
 			if (static_cast<uint16_t>(ch16) < 0x800) {
-				return { 2, {c16toc8(((ch16 & 0b11111000000) >> 6) | 0b11000000), c16toc8((ch16 & 0b111111) | 0b10000000), '\0'} };
+				return { 2, { c16toc8(((ch16 & 0b11111000000) >> 6) | 0b11000000), c16toc8((ch16 & 0b111111) | 0b10000000), '\0' } };
 			}
 			if (0xD800 <= static_cast<uint16_t>(ch16) && static_cast<uint16_t>(ch16) < 0xE000) {
-				return { -1, {}};
+				return { -1, {} };
 			}
-			return { 3, {c16toc8(((ch16 & 0b1111000000000000) >> 12) | 0b11100000), c16toc8(((ch16 & 0b111111000000) >> 6) | 0b10000000), c16toc8((ch16 & 0b111111) | 0b10000000), '\0'} };
+			return { 3, { c16toc8(((ch16 & 0b1111000000000000) >> 12) | 0b11100000), c16toc8(((ch16 & 0b111111000000) >> 6) | 0b10000000), c16toc8((ch16 & 0b111111) | 0b10000000), '\0' } };
 		}
 
 		//using MethodExportError = std::string;
@@ -216,13 +217,14 @@ namespace v8lm {
 				if (value > static_cast<T>(std::numeric_limits<U>::max())) {
 					return false;
 				}
+				return true;
 			} else if constexpr (std::is_signed_v<T> && std::is_unsigned_v<U>) {
 				// T is signed, N is unsigned
 				if (value < 0 || static_cast<std::make_unsigned_t<T>>(value) > std::numeric_limits<U>::max()) {
 					return false;
 				}
+				return true;
 			}
-			return true;
 		}
 		
 		template<typename E>
@@ -362,7 +364,7 @@ namespace v8lm {
 		if (value->IsString()) {
 			const int length = value.As<v8::String>()->Length();
 			if (length == 0) {
-				return 0;
+				return '\0';
 			}
 			else if (length == 1) {
 				v8::String::Utf8Value utf8(_isolate, value);
@@ -387,7 +389,7 @@ namespace v8lm {
 		if (value->IsString()) {
 			const int length = value.As<v8::String>()->Length();
 			if (length == 0) {
-				return { 0 };
+				return u'\0';
 			}
 			else if (length == 1) {
 				v8::String::Utf8Value utf8(_isolate, value);
@@ -2080,7 +2082,6 @@ namespace v8lm {
 			default: {
 				_provider->Log(std::format(LOG_PREFIX "ParamToObject unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
 				std::terminate();
-				return {};
 			}
 		}
 	}
@@ -2170,7 +2171,6 @@ namespace v8lm {
 			default: {
 				_provider->Log(std::format(LOG_PREFIX "ParamRefToObject unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
 				std::terminate();
-				return {};
 			}
 		}
 	}
