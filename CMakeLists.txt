@@ -42,6 +42,10 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug|Devel|MinSizeRel|RelWithDebInfo|Release")
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+if(UNIX AND NOT APPLE)
+    set(LINUX TRUE)
+endif()
+
 set(BUILD_SHARED_LIBS ON CACHE INTERNAL "")
 
 #
