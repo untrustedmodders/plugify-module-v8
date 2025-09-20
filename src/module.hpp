@@ -111,7 +111,7 @@ namespace v8lm {
 
 		struct ArgsScope {
 			Parameters params;
-			std::vector<std::pair<void*, ValueType>> storage; // used to store array temp memory
+			std::inplace_vector<std::pair<void*, ValueType>, Signature::kMaxFuncArgs> storage; // used to store array temp memory
 
 			explicit ArgsScope(size_t size);
 			~ArgsScope();
