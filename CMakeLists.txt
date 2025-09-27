@@ -58,6 +58,7 @@ if(LINUX)
 	set(PLUGIFY_USE_STATIC_STDLIB ON CACHE INTERNAL "")
 	set(PLUGIFY_USE_ABI0 OFF CACHE INTERNAL "")
 endif()
+set(PLUGIFY_USE_SANITIZER ON CACHE INTERNAL "")
 add_subdirectory(external/plugify)
 
 #
@@ -160,10 +161,33 @@ else()
 endif()
 
 if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /Zc:__cplusplus)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX /Zc:__cplusplus /Zc:preprocessor $<$<CONFIG:Release>:/Zi>)
 else()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wconversion -Wpedantic -Werror -Wshadow)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wextra -Wconversion -Wpedantic -Werror -Wshadow $<$<CONFIG:Release>:-g1>)
 endif()
+
+# Generate the embedded default (welcome) source.
+add_custom_command(
+        OUTPUT generated_default.cc
+        COMMAND embed ${CMAKE_CURRENT_BINARY_DIR}/generated_default.cc kEmbeddedDefaultSource ./src/default.js
+        DEPENDS embed default.js
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+if(APPLE)
+    target_link_options(${PROJECT_NAME} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/sym/exported_symbols.lds")
+elseif(UNIX)
+    target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/sym/version_script.lds")
+endif()
+
+if(PLUGIFY_HAS_SANITIZER)
+    target_compile_options(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>: -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
+    target_link_libraries(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>: -fsanitize=address -fno-omit-frame-pointer -fsanitize=undefined>)
+endif()
+
+include(GenerateExportHeader)
+generate_export_header(${PROJECT_NAME} EXPORT_MACRO_NAME V8LM_EXPORT EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/module_export.h)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/exports)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
        V8LM_NAME="${PROJECT_NAME}"
@@ -185,24 +209,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
        V8LM_IS_RELEASE=$<STREQUAL:${CMAKE_BUILD_TYPE},Release>
        V8LM_STATIC=$<BOOL:${V8LM_STATIC}>
 )
-
-# Generate the embedded default (welcome) source.
-add_custom_command(
-        OUTPUT generated_default.cc
-        COMMAND embed ${CMAKE_CURRENT_BINARY_DIR}/generated_default.cc kEmbeddedDefaultSource ./src/default.js
-        DEPENDS embed default.js
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
-)
-
-include(GenerateExportHeader)
-generate_export_header(${PROJECT_NAME} EXPORT_MACRO_NAME V8LM_EXPORT EXPORT_FILE_NAME ${CMAKE_BINARY_DIR}/exports/module_export.h)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/exports)
-
-if(APPLE)
-    target_link_options(${PROJECT_NAME} PRIVATE "-Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/sym/exported_symbols.lds")
-elseif(UNIX)
-    target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/sym/version_script.lds")
-endif()
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.pmodule.in
