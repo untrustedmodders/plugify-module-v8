@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.0.4...v2.0.5) (2025-09-27)
+
+
+### Bug Fixes
+
+* add mac build (disabled for now) ([ea1a18a](https://github.com/untrustedmodders/plugify-module-v8/commit/ea1a18a78dd82f600e4e7c37dd5bfec986f67499))
+* set release as default build ([c3e00f1](https://github.com/untrustedmodders/plugify-module-v8/commit/c3e00f1cc22f7725de589d1625de1a93c650b478))
+* update plugify ([b2df0a7](https://github.com/untrustedmodders/plugify-module-v8/commit/b2df0a7599429c4baa2b1d0df506d4732f42c777))
+* update plugify ([eb8cef6](https://github.com/untrustedmodders/plugify-module-v8/commit/eb8cef6486c420e8a3aaff0697cebf6cd9f6ac15))
+* update plugify ([553ea31](https://github.com/untrustedmodders/plugify-module-v8/commit/553ea310c7b327e89a539c3e5bae6d329274d288))
+
 ## [2.0.4](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.0.3...v2.0.4) (2025-09-15)
 
 
