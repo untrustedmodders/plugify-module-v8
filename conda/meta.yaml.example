@@ -11,27 +11,51 @@ source:
 build:
   number: 0
   string: "{{ target_platform | replace('-', '_') }}"
-  missing_dso_whitelist:
-    - "*/ld-linux*.so.*"  # [linux]
-    - "*/libc.so.*"       # [linux]
-    - "*/libm.so.*"       # [linux]
-    - "*/libdl.so.*"      # [linux]
-    - "*/libpthread.so.*" # [linux]
-    - "*/librt.so.*"      # [linux]
-    - "*/libplugify.so*"  # [linux]
-    - "*/libv8.so*"       # [linux]
-    - "*/plugify.dll"     # [win]
-    - "*/v8.dll"          # [win]
+  missing_dso_whitelist: 
+    # Linux system libraries
+    - "*/ld-linux*.so.*"      # [linux]
+    - "*/libc.so.*"           # [linux]
+    - "*/libm.so.*"           # [linux]
+    - "*/libdl.so.*"          # [linux]
+    - "*/libpthread.so.*"     # [linux]
+    - "*/librt.so.*"          # [linux]
+    - "*/libplugify.so*"      # [linux]
+    - "*/libv8.so*"           # [linux]
+    # macOS system libraries and frameworks
+    - "/usr/lib/libc++.1.dylib"        # [osx]
+    - "/usr/lib/libSystem.B.dylib"     # [osx]
+    - "/usr/lib/libc++abi.dylib"       # [osx]
+    - "/usr/lib/libutil.dylib"         # [osx]
+    - "/System/Library/Frameworks/*"   # [osx]
+    - "*/libplugify.dylib"             # [osx]
+    - "*/libplugify.*.dylib"           # [osx]
+    - "@rpath/libplugify.dylib"        # [osx]
+    - "@loader_path/libplugify.dylib"  # [osx]
+    - "*/libv8.dylib"                  # [osx]
+    - "*/libv8.*.dylib"                # [osx]
+    - "@rpath/libv8.dylib"             # [osx]
+    - "@loader_path/libv8.dylib"       # [osx]
+    # Windows libraries
+    - "*/plugify.dll"         # [win]
+    - "*/v8.dll"              # [win]
 
 requirements:
   run:
     - __glibc >=2.17 # [linux64]
+    - __osx >=11.0    # [osx and arm64]
 
 test:
   commands:
+    # Linux tests
     - test -f $PREFIX/bin/libplugify-module-v8.so  # [linux]
     - test -d $PREFIX/lib                          # [linux]
     - test -f $PREFIX/plugify-module-v8.pmodule    # [linux]
+    # macOS tests
+    - test -f $PREFIX/bin/libplugify-module-v8.dylib  # [osx]
+    - test -d $PREFIX/lib                             # [osx]
+    - test -f $PREFIX/plugify-module-v8.pmodule       # [osx]
+    - otool -L $PREFIX/bin/libplugify-module-v8.dylib # [osx]
+    # Windows tests
     - if not exist %PREFIX%\\bin\\plugify-module-v8.dll exit 1  # [win]
     - if not exist %PREFIX%\\lib exit 1                         # [win]
     - if not exist %PREFIX%\\plugify-module-v8.pmodule exit 1   # [win]
