@@ -23,7 +23,7 @@
 #### Вариант 1: Установка через менеджер плагинов Plugify
 
 ```bash
-plg install plugify-module-v8
+mamba install -n your_env_name -c https://untrustedmodders.github.io/plugify-module-v8/ plugify-module-v8
 ```
 
 #### Вариант 2: Ручная установка

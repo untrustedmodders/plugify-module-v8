@@ -23,7 +23,7 @@ The Plugify JavaScript Language Module enables developers to write plugins in mo
 #### Option 1: Install via Plugify Plugin Manager
 
 ```bash
-plg install plugify-module-v8
+mamba install -n your_env_name -c https://untrustedmodders.github.io/plugify-module-v8/ plugify-module-v8
 ```
 
 #### Option 2: Manual Installation
