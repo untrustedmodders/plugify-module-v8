@@ -3229,31 +3229,34 @@ namespace v8lm {
 			return MakeError("Failed to initialize fetch");
 		}
 
+		_isolate = v8::Isolate::TryGetCurrent();
+		if (_isolate == nullptr) {
 #ifndef NDEBUG
-		// Enables calling RequestGarbageCollectionForTesting to catch memory leaks
-		// at shutdown.
-		v8::V8::SetFlagsFromString("--expose_gc");
+			// Enables calling RequestGarbageCollectionForTesting to catch memory leaks
+			// at shutdown.
+			v8::V8::SetFlagsFromString("--expose_gc");
 #endif
-#if V8LM_STATIC
-		const fs::path icuDataPath = libPath / "icudtl.dat";
-		platform = v8::platform::NewDefaultPlatform();
-		if (!v8::V8::InitializeICUDefaultLocation(nullptr, fs::exists(icuDataPath, ec) ? plg::as_string(icuDataPath).c_str() : nullptr)) {
-			return MakeError("Failed to initialize the ICU library bundled with V8");
-		}
-		v8::V8::InitializeExternalStartupData(plg::as_string(libPath).c_str());
-		v8::V8::InitializePlatform(platform.get());
-		if (!v8::V8::Initialize()) {
-			return MakeError("Failed to initialize v8");
-		}
-#endif
-		_allocator = std::unique_ptr<v8::ArrayBuffer::Allocator>(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
+			const fs::path icuDataPath = libPath / "icudtl.dat";
+			platform = v8::platform::NewDefaultPlatform();
+			if (!v8::V8::InitializeICUDefaultLocation(nullptr, fs::exists(icuDataPath, ec) ? plg::as_string(icuDataPath).c_str() : nullptr)) {
+				return MakeError("Failed to initialize the ICU library bundled with V8");
+			}
+			v8::V8::InitializeExternalStartupData(plg::as_string(libPath).c_str());
+			v8::V8::InitializePlatform(platform.get());
+			if (!v8::V8::Initialize()) {
+				return MakeError("Failed to initialize v8");
+			}
 
-		v8::Isolate::CreateParams params;
-		params.array_buffer_allocator = _allocator.get();
+			_allocator = std::unique_ptr<v8::ArrayBuffer::Allocator>(v8::ArrayBuffer::Allocator::NewDefaultAllocator());
 
-		_isolate = v8::Isolate::New(params);
+			v8::Isolate::CreateParams params;
+			params.array_buffer_allocator = _allocator.get();
+
+			_isolate = v8::Isolate::New(params);
+		}
+
 		//ASSERT(_isolate->GetNumberOfDataSlots() == 4);
-		_isolate->SetData(0, this);
+		_isolate->SetData(v8::Isolate::GetNumberOfDataSlots() - 1, this);
 		_isolate->SetCaptureStackTraceForUncaughtExceptions(true);
 		_isolate->SetHostImportModuleDynamicallyCallback(ImportDynamic);
 		//_isolate->SetHostInitializeImportMetaObjectCallback(ImportMeta);
@@ -3402,11 +3405,12 @@ namespace v8lm {
 		_context.Reset();
 		_isolate->Dispose();
 		_allocator.reset();
-#if V8LM_STATIC
-		v8::V8::Dispose();
-		v8::V8::DisposePlatform();
-		platform.reset();
-#endif
+		if (platform) {
+			v8::V8::Dispose();
+			v8::V8::DisposePlatform();
+			platform.reset();
+		}
+
 		builtin::fetch::Terminate();
 	}
 

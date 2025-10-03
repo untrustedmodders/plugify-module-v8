@@ -62,7 +62,7 @@ namespace v8lm {
 		void OnMethodExport(const Extension& plugin) override;
 		bool IsDebugBuild() override;
 
-		static V8LanguageModule* Get(v8::Isolate* isolate) { return static_cast<V8LanguageModule*>(isolate->GetData(0)); }
+		static V8LanguageModule* Get(v8::Isolate* isolate) { return static_cast<V8LanguageModule*>(isolate->GetData(v8::Isolate::GetNumberOfDataSlots() - 1)); }
 		const std::unique_ptr<Provider>& GetProvider() const { return _provider; }
 
 	private:
