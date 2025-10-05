@@ -158,7 +158,8 @@ namespace v8lm {
 
 		v8::MaybeLocal<v8::Promise> ImportDynamic(v8::Local<v8::Context> context,
 												  v8::Local<v8::Value> resourceName,
-												  v8::Local<v8::String> specifier);
+												  v8::Local<v8::String> specifier,
+												  v8::Local<v8::FixedArray> importAssertions);
 
 		void ImportDynamic(const fs::path& path);
 		void CallTimeout(uint32_t id);
