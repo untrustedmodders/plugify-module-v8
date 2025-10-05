@@ -1,1 +1,2 @@
 _GetLanguageModule
+_SetModuleResolver

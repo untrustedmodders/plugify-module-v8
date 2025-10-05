@@ -1,5 +1,6 @@
 {
     global:
         GetLanguageModule;
+        SetModuleResolver;
     local: *;
 };

@@ -1,6 +1,5 @@
 #include "module.hpp"
 
-#include <dynlibutils/module.hpp>
 #include <libplatform/libplatform.h>
 #include <module_export.h>
 #include <source_location>
@@ -75,9 +74,7 @@ namespace v8lm {
 
 	namespace {
 		[[maybe_unused]] std::unique_ptr<v8::Platform> platform = nullptr;
-		std::unique_ptr<DynLibUtils::CModule> valveServer;
-		v8::Module::ResolveModuleCallback valveResolve;
-		v8::Module::SyntheticModuleEvaluationSteps evalSteps;
+		v8::Module::ResolveModuleCallback customResolver = nullptr;
 
 		void ReplaceAll(std::string& str, const std::string& from, const std::string& to) {
 			size_t start_pos{};
@@ -3375,21 +3372,6 @@ namespace v8lm {
 			return MakeError("Failed to find plugify.Matrix4x4 type");
 		}
 
-		valveServer = std::make_unique<DynLibUtils::CModule>("server");
-		if (!valveServer) {
-			return MakeError("Failed to load server module");
-		}
-
-		valveResolve = valveServer->FindPattern(DynLibUtils::ParsePattern("48 89 54 24 ? 48 89 4C 24 ? 55 53 56 57 41 55 41 56 48 8D AC 24")).RCast<v8::Module::ResolveModuleCallback>();
-		if (!valveResolve) {
-			return MakeError("Function InstantiateModule::ResolveModuleCallback not found");
-		}
-
-		evalSteps = valveServer->FindPattern(DynLibUtils::ParsePattern("48 89 54 24 ? 48 89 4C 24 ? 53 55 56 57 41 54 41 55 41 56 41 57 48 83 EC ? 49 8B F0")).RCast<v8::Module::SyntheticModuleEvaluationSteps>();
-		if (!evalSteps) {
-			return MakeError("Function InstantiateModule::ResolveModuleCallback not found");
-		}
-
 		return InitData{{ .hasUpdate = true }};
 	}
 
@@ -3432,7 +3414,6 @@ namespace v8lm {
 			platform.reset();
 		}
 
-		valveServer.reset();
 		builtin::fetch::Terminate();
 	}
 
@@ -3875,6 +3856,10 @@ namespace v8lm {
 		return &g_v8lm;
 	}
 
+	extern "C" V8LM_EXPORT void SetModuleResolver(v8::Module::ResolveModuleCallback resolver) {
+		customResolver = resolver;
+	}
+
 	Result<v8::Local<v8::Data>> V8LanguageModule::ExecuteModule(v8::Local<v8::Context> context, const fs::path& requiringDir, const std::string& moduleName) {
 		fs::path path;
 		std::string content;
@@ -4120,58 +4105,29 @@ namespace v8lm {
 
 		fs::path path;
 		if (!_moduleLoader->Search(requiringDir, moduleName, path)) {
-			/*auto it = _pathToModule.find(resourcePath);
-			v8::TryCatch tryCatch(_isolate);
-			v8::MaybeLocal<v8::Module> maybeModule = valveResolve(context, specifier, importAssertions, it->second.Get(_isolate));
-			if (tryCatch.HasCaught()) {
-				ReportException(tryCatch.Message());
-				return {};
-			}
-			v8::Local<v8::Module> module;
-			if (!maybeModule.ToLocal(&module)) {
-				return {};
-			}
-			v8::Local<v8::Value> result;
-			if (!module->Evaluate(context).ToLocal(&result)) {
-				return {};
-			}
-			v8::Local<v8::Value> retValue = module->GetModuleNamespace();
-			ASSERT(resolver->Resolve(context, retValue).ToChecked());
-			return resolver->GetPromise();*/
+			// Try import as custom module
+			if (customResolver) {
+				auto it = _pathToModule.find(resourcePath);
 
-			/*auto instance = v8::String::NewFromUtf8Literal(_isolate, "Instance");
-			v8::Local<v8::Module> module = v8::Module::CreateSyntheticModule(_isolate, specifier, { &instance, 1 }, evalSteps);
-			if (module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
-				v8::Local<v8::Value> result;
-				if (module->Evaluate(context).ToLocal(&result)) {
-					v8::Local<v8::Promise> promise = result.As<v8::Promise>();
-					v8::Local<v8::Value> retValue = module->GetModuleNamespace();
-					ASSERT(resolver->Resolve(context, retValue).ToChecked());
-					return resolver->GetPromise();
+				v8::TryCatch tryCatch(_isolate);
+				v8::MaybeLocal<v8::Module> maybeModule = customResolver(context, specifier, importAssertions, it->second.Get(_isolate));
+				if (tryCatch.HasCaught()) {
+					ReportException(tryCatch.Message());
+					return {};
 				}
-			}*/
-
-			auto it = _pathToModule.find(resourcePath);
-
-			v8::TryCatch tryCatch(_isolate);
-			v8::MaybeLocal<v8::Module> maybeModule = valveResolve(context, specifier, importAssertions, it->second.Get(_isolate));
-			if (tryCatch.HasCaught()) {
-				ReportException(tryCatch.Message());
-				return {};
-			}
-			v8::Local<v8::Module> module;
-			if (!maybeModule.ToLocal(&module)) {
-				return {};
-			}
-			if (module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
-				v8::Local<v8::Value> result;
-				if (module->Evaluate(context).ToLocal(&result)) {
-					v8::Local<v8::Object> ns = module->GetModuleNamespace().As<v8::Object>();
-					ASSERT(resolver->Resolve(context, ns).FromMaybe(false));
-					return resolver->GetPromise();
+				v8::Local<v8::Module> module;
+				if (!maybeModule.ToLocal(&module)) {
+					return {};
+				}
+				if (module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
+					v8::Local<v8::Value> result;
+					if (module->Evaluate(context).ToLocal(&result)) {
+						v8::Local<v8::Value> ns = module->GetModuleNamespace();
+						ASSERT(resolver->Resolve(context, ns).FromMaybe(false));
+						return resolver->GetPromise();
+					}
 				}
 			}
-
 			return {};
 		}
 
