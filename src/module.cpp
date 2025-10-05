@@ -3689,11 +3689,11 @@ namespace v8lm {
 	}
 
 	void V8LanguageModule::GenerateEnum(const Property& paramType) {
-		if (const auto* prototype = paramType.GetPrototype()) {
+		if (const auto prototype = paramType.GetPrototype()) {
 			GenerateEnum(*prototype);
 		}
 
-		const auto* enumerator = paramType.GetEnumerate();
+		const auto enumerator = paramType.GetEnumerate();
 		if (!enumerator) {
 			return;
 		}
