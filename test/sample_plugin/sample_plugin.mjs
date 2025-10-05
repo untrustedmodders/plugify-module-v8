@@ -1,4 +1,4 @@
-import { Plugin } from '|plugify';
+import { Plugin } from 'plugify';
 const even_or_odd = require('even-or-odd-number');
 
 export class SamplePlugin extends Plugin {
