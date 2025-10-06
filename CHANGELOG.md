@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.1.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.0.5...v2.1.0) (2025-10-06)
+
+
+### Features
+
+* add ability to use existing isolate ([e40dcd3](https://github.com/untrustedmodders/plugify-module-v8/commit/e40dcd3bd0c06370d57d214905f0393ae31d3f94))
+
+
+### Bug Fixes
+
+* add custom resolver ([3809268](https://github.com/untrustedmodders/plugify-module-v8/commit/3809268825f6433e93f7f255cdebacfee81f2cb4))
+* disable asan in debug ([17e864f](https://github.com/untrustedmodders/plugify-module-v8/commit/17e864fdd2cbb9c2ac6e545dfb45771ebee299fb))
+* improve san and debug symbols on windows ([4eda18c](https://github.com/untrustedmodders/plugify-module-v8/commit/4eda18c703f88bedf38722f05441d5d17f5d740c))
+* some cleanup ([60bf77f](https://github.com/untrustedmodders/plugify-module-v8/commit/60bf77f9d43c38d0cc660b58dc3b6b40cab7800e))
+* tests issue ([7d5aba5](https://github.com/untrustedmodders/plugify-module-v8/commit/7d5aba5eb03a7030ffe6f0dfa012adb99f5abc77))
+* update plugify ([6bc6b17](https://github.com/untrustedmodders/plugify-module-v8/commit/6bc6b1741429a077e22c94e8ec3adf27ebb4b83c))
+* update plugify ([f23c52b](https://github.com/untrustedmodders/plugify-module-v8/commit/f23c52b31fb2efd5745786e7381a8e3f138d07ac))
+* update plugify ([5663575](https://github.com/untrustedmodders/plugify-module-v8/commit/566357544bce88f7abdaf487976262f29c07be13))
+
 ## [2.0.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.0.4...v2.0.5) (2025-09-27)
 
 
