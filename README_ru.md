@@ -10,6 +10,65 @@
 - **Бесшовная интеграция**: Плавно интегрируйте JavaScript-плагины в систему Plugify вместе с плагинами на других поддерживаемых языках.
 - **Межъязыковое взаимодействие**: Легко взаимодействуйте с плагинами, написанными на C++, Python, Lua и других языках.
 - **Изолированное выполнение**: Безопасно выполняйте JavaScript-код в изолированной (sandbox) среде V8 с контролируемым доступом к нативным API.
+- **Интеграция с Valve Pulse**: Получайте прямой доступ к нативной системе скриптов Pulse (cs_script) для Counter-Strike 2 из ваших Plugify-плагинов, обеспечивая бесшовную интеграцию с игровыми сущностями, событиями и функциональностью.
+
+## Интеграция с Valve Pulse ([cs_script](https://developer.valvesoftware.com/wiki/Counter-Strike_2_Workshop_Tools/Scripting))
+<details>
+<summary>Спойлер</summary>
+
+Модуль языка V8 предоставляет уникальную интеграцию с **системой скриптов Pulse** от Valve (также известной как `cs_script`) для Counter-Strike 2. С помощью плагина s2sdk вы можете динамически импортировать и использовать модули Pulse вместе с вашими Plugify-плагинами, создавая мощные гибридные решения, использующие обе системы.
+
+### Ключевые возможности
+
+- **Динамическая загрузка модулей**: Импортируйте модули Pulse такие как `cs_script/point_script`, `cs_script/entities` и `cs_script/events` во время выполнения
+- **Полный доступ к API Pulse**: Используйте нативные API скриптов Valve для игровых сущностей, событий и игровой логики
+- **Разработка гибридных плагинов**: Объединяйте мультиязычную экосистему Plugify с игровой функциональностью Pulse
+- **Бесшовная интеграция**: Автоматически определяйте когда Pulse становится доступной и загружайте модули динамически
+
+### Быстрый пример
+
+```javascript
+import { Plugin } from 'plugify';
+import * as s2sdk from ':s2sdk';
+
+export class HybridPlugin extends Plugin {
+    pluginStart() {
+        s2sdk.OnEntityCreated_Register(HybridPlugin.OnEntityCreated);
+    }
+
+    static OnEntityCreated(entityHandle) {
+        const className = s2sdk.GetEntityClassname(entityHandle);
+        
+        if (className === "point_script") {
+            setTimeout(() => {
+                // Динамически импортируем модули Pulse после создания point_script
+                import("cs_script/point_script").then(point_script => {
+                    const { Instance } = point_script;
+                    
+                    console.log("✓ Система Pulse подключена!");
+                    Instance.Msg("✓ Интеграция Pulse активна!");
+                    
+                    // Используем функциональность Pulse
+                    Instance.SetThink(() => {
+                        Instance.Msg("Выполняется функция Think...");
+                        return Instance.GetGameTime() + 5.0;
+                    });
+                    Instance.SetNextThink(Instance.GetGameTime());
+                });
+            }, 100);
+        }
+    }
+}
+```
+
+**Примечание**: Модули Pulse должны импортироваться динамически после создания сущности `point_script`, так как плагины Plugify загружаются раньше, чем система скриптов Valve становится доступной.
+
+Для подробной документации по интеграции с Pulse см. [Руководство по интеграции с системой Pulse](https://untrustedmodders.github.io/s2sdk/pulse-integration).
+
+Узнайте больше о системе Pulse от Valve:
+- [API скриптов Counter-Strike 2](https://developer.valvesoftware.com/wiki/Counter-Strike_2_Workshop_Tools/Scripting_API)
+- [Туториал Hello Gordon](https://developer.valvesoftware.com/wiki/Counter-Strike_2_Workshop_Tools/Scripting/Hello_Gordon)
+</details>
 
 ## Начало работы
 
@@ -17,6 +76,7 @@
 
 - Рекомендуется JavaScript `ES6`.
 - Установлен фреймворк Plugify.
+- Для интеграции с Pulse: установлен плагин [s2sdk](https://github.com/untrustedmodders/plugify-plugin-s2sdk)
 
 ### Установка
 
