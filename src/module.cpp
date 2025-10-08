@@ -3402,15 +3402,13 @@ namespace v8lm {
 		_provider.reset();
 
 		_isolate->SetData(0, nullptr);
-#ifndef NDEBUG
-		if (platform) {
-			_isolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
-		}
-#endif
 		_context.Reset();
-		_isolate->Dispose();
-		_allocator.reset();
 		if (platform) {
+#ifndef NDEBUG
+			_isolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
+#endif
+			_isolate->Dispose();
+			_allocator.reset();
 			v8::V8::Dispose();
 			v8::V8::DisposePlatform();
 			platform.reset();
