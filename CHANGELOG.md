@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.0...v2.1.1) (2025-10-08)
+
+
+### Bug Fixes
+
+* Fatal V8 Error v8::Isolate::RequestGarbageCollectionForTesting ([4dc6314](https://github.com/untrustedmodders/plugify-module-v8/commit/4dc631497dcc93553dab624f68e92e2a4ef04552))
+
 ## [2.1.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.0.5...v2.1.0) (2025-10-06)
 
 
