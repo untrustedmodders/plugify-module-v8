@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.1...v2.1.2) (2025-10-08)
+
+
+### Bug Fixes
+
+* make isolate not disposable if we not own it ([58a7ff2](https://github.com/untrustedmodders/plugify-module-v8/commit/58a7ff2530cceba601a5fce35912a7ee3ef5e451))
+
 ## [2.1.1](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.0...v2.1.1) (2025-10-08)
 
 
