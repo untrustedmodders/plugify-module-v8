@@ -3403,7 +3403,9 @@ namespace v8lm {
 
 		_isolate->SetData(0, nullptr);
 #ifndef NDEBUG
-		_isolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
+		if (platform) {
+			_isolate->RequestGarbageCollectionForTesting(v8::Isolate::kFullGarbageCollection);
+		}
 #endif
 		_context.Reset();
 		_isolate->Dispose();
