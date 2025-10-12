@@ -3687,7 +3687,7 @@ namespace v8lm {
 
 		std::vector<v8::Local<v8::String>> exportNames;
 		std::vector<JsExportData<v8::Function>> exportFuncs;
-		std::unordered_map<std::string, JsExportData<v8::Object>, plg::string_hash, std::equal_to<>> exportEnums;
+		std::unordered_map<std::string, JsExportData<v8::Object>> exportEnums;
 	}
 
 	void V8LanguageModule::GenerateEnum(const Property& paramType) {
@@ -4266,10 +4266,16 @@ namespace v8lm {
 						refModule = CreateExternalModule(*plugin);
 					}
 					if (refModule.IsEmpty()) {
-						return {};
+						return {}; // Already throw
 					}
-					info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, refModule.ToLocalChecked()));
-					continue;
+					v8::Local<v8::Module> synModule = refModule.ToLocalChecked();
+					if (synModule->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
+						v8::Local<v8::Value> result;
+						if (synModule->Evaluate(context).ToLocal(&result)) {
+							info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, synModule));
+							continue;
+						}
+					}
 				}
 			}
 
@@ -4296,7 +4302,7 @@ namespace v8lm {
 				else if (refName.ends_with(".mjs") || refName.ends_with(".js")) {
 					v8::MaybeLocal<v8::Module> refModule = FetchESModuleTree(context, refPath);
 					if (refModule.IsEmpty()) {
-						return {};
+						return {}; // Already throw
 					}
 					info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, refModule.ToLocalChecked()));
 					continue;
@@ -4305,12 +4311,10 @@ namespace v8lm {
 
 			v8::MaybeLocal<v8::Module> refModule = FetchCJSModuleAsESModule(context, refPath.extension() == ".cjs" ? plg::as_string(refPath) : refModuleName);
 			if (refModule.IsEmpty()) {
-				/*auto instance = v8::String::NewFromUtf8Literal(_isolate, "Instance");
-				refModule = v8::Module::CreateSyntheticModule(_isolate, request->GetSpecifier(), { &instance, 1 }, evalSteps);
-				if (refModule.IsEmpty()) {
+				// If we have custom resolver not throw here, to allow resolve dynamically
+				if (!customResolver) {
 					ThrowException(std::format("Can not resolve '{}', import by '{}'", refModuleName, plg::as_string(path)));
-					return {};
-				}*/
+				}
 				return {};
 			}
 
@@ -4405,6 +4409,107 @@ namespace v8lm {
 		return true;
 	}
 
+	[[maybe_unused]] void PrintModuleExports(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Module> module) {
+	    std::string buffer;
+	    buffer.reserve(4096);
+		buffer += LOG_PREFIX;
+	    auto out = std::back_inserter(buffer);
+	    
+	    // Check if module is instantiated (required to get namespace)
+	    if (module->GetStatus() < v8::Module::kInstantiated) {
+	        std::format_to(out, "Module status: {} (not instantiated yet)\n", plg::enum_to_string(module->GetStatus()));
+	        std::format_to(out, "Cannot extract exports - module must be instantiated first\n");
+	        g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	        return;
+	    }
+
+	    std::format_to(out, "=== Module Export Information ===\n");
+	    std::format_to(out, "Module Identity Hash: {}\n", module->GetIdentityHash());
+	    std::format_to(out, "Module Status: {}\n", plg::enum_to_string(module->GetStatus()));
+	    std::format_to(out, "Is SourceText Module: {}\n", module->IsSourceTextModule() ? "true" : "false");
+	    std::format_to(out, "Is Synthetic Module: {}\n", module->IsSyntheticModule() ? "true" : "false");
+	    std::format_to(out, "\n");
+
+	    // Get the module namespace object
+	    v8::Local<v8::Value> namespace_value = module->GetModuleNamespace();
+	    
+	    if (namespace_value.IsEmpty() || !namespace_value->IsObject()) {
+	        std::format_to(out, "Failed to get module namespace\n");
+	        g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	        return;
+	    }
+
+	    v8::Local<v8::Object> namespace_obj = namespace_value.As<v8::Object>();
+	    
+	    // Get all property names (export names) from the namespace
+	    v8::Local<v8::Array> property_names;
+	    if (!namespace_obj->GetOwnPropertyNames(context).ToLocal(&property_names)) {
+	        std::format_to(out, "Failed to get property names\n");
+	        g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	        return;
+	    }
+
+	    uint32_t length = property_names->Length();
+	    std::format_to(out, "=== Exported Members ({} total) ===\n", length);
+
+	    // Iterate through all exports
+	    for (uint32_t i = 0; i < length; i++) {
+	        v8::Local<v8::Value> key;
+	        if (!property_names->Get(context, i).ToLocal(&key)) {
+	            continue;
+	        }
+
+	        // Get the export name
+	        v8::String::Utf8Value export_name(isolate, key);
+	        
+	        // Get the export value
+	        v8::Local<v8::Value> export_value;
+	        if (!namespace_obj->Get(context, key).ToLocal(&export_value)) {
+	            std::format_to(out, "  [{}] {}: <error getting value>\n", i, *export_name);
+	            continue;
+	        }
+
+	        // Determine the type and value
+	        std::string type;
+	        std::string value_str;
+
+	        if (export_value->IsFunction()) {
+	            type = "function";
+	            value_str = "[Function]";
+	        } else if (export_value->IsString()) {
+	            type = "string";
+	            v8::String::Utf8Value str_value(isolate, export_value);
+	            value_str = std::format("\"{}\"", *str_value);
+	        } else if (export_value->IsNumber()) {
+	            type = "number";
+	            double num = export_value.As<v8::Number>()->Value();
+	            value_str = std::format("{}", num);
+	        } else if (export_value->IsBoolean()) {
+	            type = "boolean";
+	            value_str = export_value.As<v8::Boolean>()->Value() ? "true" : "false";
+	        } else if (export_value->IsObject()) {
+	            type = "object";
+	            value_str = "[Object]";
+	        } else if (export_value->IsUndefined()) {
+	            type = "undefined";
+	            value_str = "undefined";
+	        } else if (export_value->IsNull()) {
+	            type = "null";
+	            value_str = "null";
+	        } else {
+	            type = "unknown";
+	            value_str = "<unknown type>";
+	        }
+
+	        std::format_to(out, "  [{}] {}: ({}) {}\n", i, *export_name, type, value_str);
+	    }
+	    
+	    std::format_to(out, "\n");
+	    
+	    // Log the complete buffer
+	    g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	}
+
 	// static
 	v8::MaybeLocal<v8::Module> V8LanguageModule::ResolveModule(
 			v8::Local<v8::Context> context, v8::Local<v8::String> specifier,
@@ -4416,6 +4521,7 @@ namespace v8lm {
 		const std::string refModuleName = self->ToString(specifier);
 		auto it2 = it1->second.resolveCache.find(refModuleName);
 		ASSERT(it2 != it1->second.resolveCache.end());
+		//PrintModuleExports(isolate, context, it2->second.Get(isolate));
 		return it2->second.Get(isolate);
 	}
 
