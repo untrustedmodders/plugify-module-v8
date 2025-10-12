@@ -4476,7 +4476,7 @@ namespace v8lm {
 		if (value->IsString()) {
 			v8::Local<v8::String> v8s = value.As<v8::String>();
 			std::string s;
-			s.resize(v8s->Utf8Length(_isolate));
+			s.resize(static_cast<size_t>(v8s->Utf8Length(_isolate)));
 			v8s->WriteUtf8(_isolate, s.data());
 			return s;
 		} else if (value->IsModuleNamespaceObject()) {
@@ -4542,18 +4542,34 @@ namespace v8lm {
 	}
 
 	fs::path V8LanguageModule::ToPath(v8::Local<v8::Value> value) const {
-		ASSERT(!value->IsString());
+		ASSERT(!value.IsEmpty());
+		if (value->IsString()) {
 #if V8LM_PLATFORM_WINDOWS
-		v8::String::Value utf16(_isolate, value);
-		if (*utf16) {
-			return std::wstring_view{ reinterpret_cast<wchar_t*>(*utf16), static_cast<size_t>(utf16.length()) };
-		}
+			v8::Local<v8::String> v16s = value.As<v8::String>();
+			std::wstring s;
+			s.resize(static_cast<size_t>(v16s->Length()));
+			v16s->Write(_isolate, reinterpret_cast<uint16_t*>(s.data()));
 #else
-		v8::String::Utf8Value utf8(_isolate, value);
-		if (*utf8) {
-			return std::string_view{ *utf8, static_cast<size_t>(utf8.length()) };
-		}
+			v8::Local<v8::String> v8s = value.As<v8::String>();
+			std::string s;
+			s.resize(static_cast<size_t>(v8s->Utf8Length(_isolate)));
+			v8s->WriteUtf8(_isolate, s.data());
 #endif
+			return s;
+		} else {
+			v8::String::Utf8Value v(_isolate, value);
+#if V8LM_PLATFORM_WINDOWS
+			v8::String::Value utf16(_isolate, value);
+			if (*utf16) {
+				return std::wstring(reinterpret_cast<wchar_t*>(*utf16), static_cast<size_t>(utf16.length()));
+			}
+#else
+			v8::String::Utf8Value utf8(_isolate, value);
+			if (*utf8) {
+				return std::string(*utf8, static_cast<size_t>(utf8.length()));
+			}
+#endif
+		}
 		return {};
 	}
 
