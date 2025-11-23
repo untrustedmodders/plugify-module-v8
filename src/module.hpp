@@ -69,8 +69,8 @@ namespace v8lm {
 		Result<JsMethodData> GenerateMethodExport(const Method& method, v8::Local<v8::Context> context, v8::Local<v8::Object> exports);
 		v8::MaybeLocal<v8::Module> CreateInternalModule(const Extension& plugin);
 		v8::MaybeLocal<v8::Module> CreateExternalModule(const Extension& plugin);
-		void GenerateEnum(const Property& paramType);
-		void GenerateEnum(const Method& method);
+		void CreateEnumObject(const Property& paramType);
+		void CreateEnumObject(const Method& method);
 		v8::Local<v8::Function> FindJavascriptMethod(MemAddr addr) const;
 		void AddToFunctionsMap(void* funcAddr, const JsFunction& funcObj);
 		JsFunction FindExternal(void* funcAddr) const;
@@ -86,6 +86,7 @@ namespace v8lm {
 		template<typename T>
 		std::optional<plg::vector<T>> ArrayFromObject(v8::Local<v8::Value> arrayValue);
 		v8::Local<v8::Value> CreateJsObject(v8::Local<v8::Function> ctor, std::span<v8::Local<v8::Value>> args);
+		v8::Local<v8::Value> CreateJsObject();
 		template<typename T>
 		v8::Local<v8::Value> CreateJsObject(const T& value);
 		template<typename T>

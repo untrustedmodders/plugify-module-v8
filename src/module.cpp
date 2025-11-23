@@ -1031,6 +1031,10 @@ namespace v8lm {
 
 #pragma region CreateJsObject
 
+	v8::Local<v8::Value> V8LanguageModule::CreateJsObject() {
+		return v8::Undefined(_isolate);
+	}
+
 	template<>
 	v8::Local<v8::Value> V8LanguageModule::CreateJsObject(const bool& value) {
 		return v8::Boolean::New(_isolate, value);
@@ -1206,7 +1210,7 @@ namespace v8lm {
 			if constexpr (is_vector_type_v<T>) {
 				output = CreateJsObjectList(val);
 			} else if constexpr (is_none_type_v<T>) {
-				output = v8::Undefined(_isolate);
+				output = CreateJsObject();
 			} else {
 				output = CreateJsObject(val);
 			}
@@ -2653,7 +2657,7 @@ namespace v8lm {
 		func(a.params.Get(), &ret);
 		switch (retType.GetType()) {
 			case ValueType::Void:
-				return v8::Undefined(_isolate);
+				return CreateJsObject();
 			case ValueType::Bool: {
 				const bool val = ret.Get<bool>();
 				return CreateJsObject(val);
@@ -3690,9 +3694,9 @@ namespace v8lm {
 		std::unordered_map<std::string, JsExportData<v8::Object>> exportEnums;
 	}
 
-	void V8LanguageModule::GenerateEnum(const Property& paramType) {
+	void V8LanguageModule::CreateEnumObject(const Property& paramType) {
 		if (const auto prototype = paramType.GetPrototype()) {
-			GenerateEnum(*prototype);
+			CreateEnumObject(*prototype);
 		}
 
 		const auto enumerator = paramType.GetEnumerate();
@@ -3719,10 +3723,10 @@ namespace v8lm {
 		exportEnums.emplace(name, JsExportData<v8::Object>{enumName, enumObject});
 	}
 
-	void V8LanguageModule::GenerateEnum(const Method& method) {
-		GenerateEnum(method.GetRetType());
+	void V8LanguageModule::CreateEnumObject(const Method& method) {
+		CreateEnumObject(method.GetRetType());
 		for (const auto& paramType : method.GetParamTypes()) {
-			GenerateEnum(paramType);
+			CreateEnumObject(paramType);
 		}
 	}
 
@@ -3755,7 +3759,7 @@ namespace v8lm {
 			v8::Local<v8::String> name = MakeString(method.GetName());
 			exportNames.emplace_back(name);
 			exportFuncs.emplace_back(name, func);
-			GenerateEnum(method);
+			CreateEnumObject(method);
 		}
 
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
@@ -3815,7 +3819,7 @@ namespace v8lm {
 			v8::Local<v8::String> name = MakeString(method.GetName());
 			exportNames.emplace_back(name);
 			exportFuncs.emplace_back(name, func);
-			GenerateEnum(method);
+			CreateEnumObject(method);
 		}
 
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
