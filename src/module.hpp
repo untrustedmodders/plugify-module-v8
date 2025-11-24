@@ -12,6 +12,8 @@
 #include <plugify/provider.hpp>
 #include <plugify/enum_object.hpp>
 #include <plugify/enum_value.hpp>
+#include <plugify/binding.hpp>
+#include <plugify/alias.hpp>
 
 #include <plg/any.hpp>
 #include <plg/string.hpp>
@@ -71,6 +73,11 @@ namespace v8lm {
 		v8::MaybeLocal<v8::Module> CreateExternalModule(const Extension& plugin);
 		void CreateEnumObject(const Property& paramType);
 		void CreateEnumObject(const Method& method);
+		v8::Local<v8::Function> CreateEmptyClass(const std::string& className);
+		v8::Local<v8::Value> ConvertAlias(const Alias& alias);
+		v8::Local<v8::Array> ConvertBinding(const Binding& binding);
+		v8::Local<v8::Value> GetInvalidValueForType(ValueType type, std::string_view invalidValue);
+		bool CreateClassObject(const Class& classData);
 		v8::Local<v8::Function> FindJavascriptMethod(MemAddr addr) const;
 		void AddToFunctionsMap(void* funcAddr, const JsFunction& funcObj);
 		JsFunction FindExternal(void* funcAddr) const;
@@ -205,6 +212,7 @@ namespace v8lm {
 		v8::Global<v8::Function> _vector3ClassObject;
 		v8::Global<v8::Function> _vector4ClassObject;
 		v8::Global<v8::Function> _matrix4x4ClassObject;
+		v8::Global<v8::Function> _bindClassMethodsFunc;
 		v8::Global<v8::Function> _require;
 		v8::Global<v8::Function> _getESMMain;
 		struct PluginData {
