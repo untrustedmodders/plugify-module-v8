@@ -3749,8 +3749,8 @@ namespace v8lm {
 		for (const auto& [method, addr] : methods) {
 			v8::Local<v8::Function> func = FindJavascriptMethod(addr);
 			if (func.IsEmpty()) {
-				_provider->Log(std::format(LOG_PREFIX "Not found '{}' method while CreateInternalModule for '{}' plugin", method.GetName(), plugin.GetName()), Severity::Fatal);
-				std::terminate();
+				ThrowException(std::format(LOG_PREFIX "Not found '{}' method while CreateInternalModule for '{}' plugin", method.GetName(), plugin.GetName()));
+				return {};
 			}
 			v8::Local<v8::String> name = MakeString(method.GetName());
 			exportNames.emplace_back(name);
