@@ -3408,6 +3408,7 @@ namespace v8lm {
 		_externalFunctions.clear();
 		_moduleFunctions.clear();
 		_jsMethods.clear();
+		_jsObjects.clear();
 		_pluginsMap.clear();
 		_provider.reset();
 
@@ -3689,16 +3690,72 @@ namespace v8lm {
 	}
 
 	namespace {
-		template<typename T>
-		struct JsExportData {
-			v8::Local<v8::String> name;
-			v8::Local<T> object;
+		template<typename K, typename V>
+		class VectorMap {
+		public:
+			using pair_type = std::pair<K,V>;
+			using iterator = typename std::vector<pair_type>::iterator;
+			using const_iterator = typename std::vector<pair_type>::const_iterator;
+
+			// Access or insert
+			V& operator[](const K& key) {
+				auto it = std::find_if(data.begin(), data.end(),
+									   [&](const pair_type& p){ return p.first == key; });
+				if (it == data.end()) {
+					data.emplace_back(key, V{});
+					return data.back().second;
+				}
+				return it->second;
+			}
+
+			// Emplace a new element if key doesn't exist
+			template<typename... Args>
+			std::pair<iterator, bool> emplace(const K& key, Args&&... args) {
+				auto it = std::find_if(data.begin(), data.end(),
+									   [&](const pair_type& p){ return p.first == key; });
+				if (it != data.end()) {
+					return {it, false}; // already exists
+				}
+				data.emplace_back(key, V(std::forward<Args>(args)...));
+				return {std::prev(data.end()), true};
+			}
+
+			// Find element, returns iterator or end()
+			iterator find(const K& key) {
+				return std::find_if(data.begin(), data.end(),
+									[&](const pair_type& p){ return p.first == key; });
+			}
+
+			const_iterator find(const K& key) const {
+				return std::find_if(data.begin(), data.end(),
+									[&](const pair_type& p){ return p.first == key; });
+			}
+
+			bool contains(const K& key) const {
+				return find(key) != end();
+			}
+
+			void clear() {
+				data.clear();
+			}
+
+			// Iteration
+			iterator begin() { return data.begin(); }
+			iterator end() { return data.end(); }
+			const_iterator begin() const { return data.begin(); }
+			const_iterator end() const { return data.end(); }
+
+			// Size
+			std::size_t size() const { return data.size(); }
+
+		private:
+			std::vector<pair_type> data;
 		};
 
 		std::vector<v8::Local<v8::String>> exportNames;
-		std::unordered_map<std::string, JsExportData<v8::Function>> exportFuncs;
-		std::unordered_map<std::string, JsExportData<v8::Object>> exportEnums;
-		std::unordered_map<std::string, JsExportData<v8::Object>> exportClasses;
+		VectorMap<std::string_view, v8::Global<v8::Function>> exportFuncs;
+		VectorMap<std::string_view, v8::Global<v8::Object>> exportEnums;
+		VectorMap<std::string_view, v8::Global<v8::FunctionTemplate>> exportClasses;
 	}
 
 	void V8LanguageModule::CreateEnumObject(const Property& paramType) {
@@ -3725,9 +3782,8 @@ namespace v8lm {
 				v8::BigInt::New(_isolate, value.GetValue())).Check();
 		}
 
-		v8::Local<v8::String> name = MakeString(enumName);
-		exportNames.emplace_back(name);
-		exportEnums.emplace(enumName, JsExportData{name, object});
+		exportNames.emplace_back(MakeString(enumName));
+		exportEnums.emplace(enumName, v8::Global<v8::Object>(_isolate, object));
 	}
 
 	void V8LanguageModule::CreateEnumObject(const Method& method) {
@@ -3737,42 +3793,22 @@ namespace v8lm {
 		}
 	}
 
-	v8::Local<v8::Function> V8LanguageModule::CreateEmptyClass(const std::string& className) {
-		v8::EscapableHandleScope handleScope(_isolate);
-		v8::Local<v8::Context> context = _context.Get(_isolate);
-
-		// Create an empty constructor function
-		// Using FunctionTemplate for cleaner approach
-		v8::Local<v8::FunctionTemplate> classTpl = v8::FunctionTemplate::New(_isolate);
-		classTpl->SetClassName(MakeString(className));
-
-		v8::Local<v8::Function> classFunc;
-		if (!classTpl->GetFunction(context).ToLocal(&classFunc)) {
-			return {};
-		}
-
-		return handleScope.Escape(classFunc);
-	}
-
 	v8::Local<v8::Value> V8LanguageModule::ConvertAlias(const Alias& alias) {
-		v8::EscapableHandleScope handleScope(_isolate);
-		v8::Local<v8::Context> context = _context.Get(_isolate);
-
 		if (alias.GetName().empty()) {
-			return handleScope.Escape(v8::Null(_isolate));
+			return v8::Null(_isolate);
 		}
 
-		// Create array [name, owner]
+		v8::Local<v8::Context> context = _isolate->GetCurrentContext();
+
+		// Create array [name, owner]{
 		v8::Local<v8::Array> arr = v8::Array::New(_isolate, 2);
 		arr->Set(context, 0, CreateJsObject(alias.GetName())).Check();
 		arr->Set(context, 1, CreateJsObject(alias.IsOwner())).Check();
-		return handleScope.Escape(arr);
+		return arr;
 	}
 
 	v8::Local<v8::Array> V8LanguageModule::ConvertBinding(const Binding& binding) {
-		v8::EscapableHandleScope handleScope(_isolate);
-		v8::Local<v8::Context> context = _context.Get(_isolate);
-
+		v8::Local<v8::Context> context = _isolate->GetCurrentContext();
 		// Create array: [name, func, bindSelf, paramAliases, retAlias]
 		v8::Local<v8::Array> methodTuple = v8::Array::New(_isolate, 5);
 
@@ -3784,7 +3820,7 @@ namespace v8lm {
 		if (func == exportFuncs.end()) {
 			return {};
 		}
-		methodTuple->Set(context, 1, func->second.object).Check();
+		methodTuple->Set(context, 1, func->second.Get(_isolate)).Check();
 
 		// 2: bindSelf
 		methodTuple->Set(context, 2, CreateJsObject(binding.IsBindSelf())).Check();
@@ -3793,72 +3829,67 @@ namespace v8lm {
 		const auto& paramAliases = binding.GetParamAliases();
 		v8::Local<v8::Array> paramAliasesArr = v8::Array::New(_isolate, static_cast<int>(paramAliases.size()));
 		for (size_t i = 0; i < paramAliases.size(); ++i) {
-			paramAliasesArr->Set(context, i, ConvertAlias(paramAliases[i])).Check();
+			paramAliasesArr->Set(context, static_cast<uint32_t>(i), ConvertAlias(paramAliases[i])).Check();
 		}
 		methodTuple->Set(context, 3, paramAliasesArr).Check();
 
 		// 4: retAlias
 		methodTuple->Set(context, 4, ConvertAlias(binding.GetRetAlias())).Check();
 
-		return handleScope.Escape(methodTuple);
+		return methodTuple;
 	}
 
 	v8::Local<v8::Value> V8LanguageModule::GetInvalidValueForType(ValueType type, std::string_view invalidValue) {
 		if (!invalidValue.empty()) {
-			// Try to parse as number
-			if (invalidValue.contains('.')) {
-				if (const auto val = plg::cast_to<double>(invalidValue)) {
-					return CreateJsObject(*val);
-				}
+			// Single numeric parse path
+			auto parseInteger = [&]() -> std::optional<int64_t> {
+				return plg::cast_to<int64_t>(invalidValue);
+			};
+			auto parseFloat = [&]() -> std::optional<double> {
+				return plg::cast_to<double>(invalidValue);
+			};
+
+			const bool isFloat = invalidValue.contains('.') ||
+								 type == ValueType::Float ||
+								 type == ValueType::Double;
+
+			if (isFloat) {
+				if (auto v = parseFloat()) return CreateJsObject(*v);
 			} else {
-				if (const auto val = plg::cast_to<int64_t>(invalidValue)) {
-					return CreateJsObject(*val);
-				}
+				if (auto v = parseInteger()) return CreateJsObject(*v);
 			}
 
-			// Return as string if parsing fails
 			return CreateJsObject(invalidValue);
 		}
 
-		// Default invalid values based on type
 		switch (type) {
-			case ValueType::Pointer:
-				return CreateJsObject(static_cast<void*>(nullptr));
-			case ValueType::Int64:
-				return CreateJsObject(0LL);
-			case ValueType::UInt64:
-				return CreateJsObject(0ULL);
-			case ValueType::UInt32:
-			case ValueType::UInt16:
-			case ValueType::UInt8:
-				return CreateJsObject(0U);
-			case ValueType::Int32:
-			case ValueType::Int16:
-			case ValueType::Int8:
-				return CreateJsObject(0);
-			case ValueType::Bool:
-				return CreateJsObject(false);
-			case ValueType::String:
-				return CreateJsObject(std::string_view(""));
-			default: {
-				return CreateJsObject();
-			}
+			case ValueType::Bool:      return CreateJsObject(false);
+			case ValueType::Int8:      return CreateJsObject(int8_t{0});
+			case ValueType::Int16:     return CreateJsObject(int16_t{0});
+			case ValueType::Int32:     return CreateJsObject(int32_t{0});
+			case ValueType::Int64:     return CreateJsObject(int64_t{0});
+			case ValueType::UInt8:     return CreateJsObject(uint8_t{0});
+			case ValueType::UInt16:    return CreateJsObject(uint16_t{0});
+			case ValueType::UInt32:    return CreateJsObject(uint32_t{0});
+			case ValueType::UInt64:    return CreateJsObject(uint64_t{0});
+			case ValueType::Float:     return CreateJsObject(float{0});
+			case ValueType::Double:    return CreateJsObject(double{0});
+			case ValueType::Pointer:   return CreateJsObject(static_cast<void*>(nullptr));
+			case ValueType::String:    return CreateJsObject(std::string_view(""));
+			default:                   return CreateJsObject();
 		}
 	}
 
-	// TODO: More logging on fails
 	bool V8LanguageModule::CreateClassObject(const Class& classData) {
-		v8::Locker locker(_isolate);
-		v8::Isolate::Scope isolateScope(_isolate);
-		v8::HandleScope handleScope(_isolate);
-		v8::Local<v8::Context> context = _context.Get(_isolate);
-		v8::Context::Scope contextScope(context);
-
+		v8::Local<v8::Context> context = _isolate->GetCurrentContext();
         const std::string& className = classData.GetName();
 
 		// Create a new empty JavaScript class
-		v8::Local<v8::Function> classFunc = CreateEmptyClass(className);
-		if (classFunc.IsEmpty()) {
+		v8::Local<v8::FunctionTemplate> classTpl = v8::FunctionTemplate::New(_isolate);
+		classTpl->SetClassName(MakeString(className));
+
+		v8::Local<v8::Function> classFunc;
+		if (!classTpl->GetFunction(context).ToLocal(&classFunc)) {
 			return false;
 		}
 
@@ -3868,10 +3899,12 @@ namespace v8lm {
 
         for (size_t i = 0; i < constructorNames.size(); ++i) {
             auto ctorFunc = exportFuncs.find(constructorNames[i]);
-            if (ctorFunc == exportFuncs.end()) {
-                return false;
+            if (ctorFunc != exportFuncs.end()) {
+            	constructors->Set(context, static_cast<uint32_t>(i), ctorFunc->second.Get(_isolate)).Check();
+            } else {
+            	ThrowException(std::format(LOG_PREFIX "Constructor function not found: {}", constructorNames[i]));
+            	return false;
             }
-        	constructors->Set(context, i, ctorFunc->second.object).Check();
         }
 
         // Prepare destructor (can be null)
@@ -3880,7 +3913,10 @@ namespace v8lm {
         if (!destructorName.empty()) {
             auto dtorFunc = exportFuncs.find(destructorName);
         	if (dtorFunc != exportFuncs.end()) {
-            	destructor = dtorFunc->second.object;
+            	destructor = dtorFunc->second.Get(_isolate);
+            } else {
+            	ThrowException(std::format(LOG_PREFIX "Destructor function not found: {}", destructorName));
+            	return false;
             }
         }
 
@@ -3891,9 +3927,10 @@ namespace v8lm {
         for (size_t i = 0; i < bindings.size(); ++i) {
             v8::Local<v8::Array> methodTuple = ConvertBinding(bindings[i]);
             if (methodTuple.IsEmpty()) {
+            	ThrowException(std::format(LOG_PREFIX "Method function not found: {}", bindings[i].GetMethod()));
                 return false;
             }
-            methods->Set(context, i, methodTuple).Check();
+            methods->Set(context, static_cast<uint32_t>(i), methodTuple).Check();
         }
 
         // Prepare invalid value
@@ -3912,18 +3949,23 @@ namespace v8lm {
             invalidValue
         };
 
+		v8::TryCatch tryCatch(_isolate);
         v8::Local<v8::Value> result;
         if (!bindFunc->Call(context, CreateJsObject(), static_cast<int>(args.size()), args.data()).ToLocal(&result)) {
             return false;
         }
 
+		if (tryCatch.HasCaught()) {
+			ReportException(tryCatch.Message());
+			_provider->Log(std::format(LOG_PREFIX "{}: call of 'bindClassMethods' failed", className), Severity::Error);
+		}
+
         if (!result->IsObject()) {
         	return false;
         }
 
-		v8::Local<v8::String> name = MakeString(className);
-		exportNames.emplace_back(name);
-		exportClasses.emplace(className, JsExportData<v8::Object>{name, result.As<v8::Object>()});
+		exportNames.emplace_back(MakeString(className));
+		exportClasses.emplace(className, v8::Global<v8::FunctionTemplate>(_isolate, classTpl));
 
         return true;
     }
@@ -3942,29 +3984,27 @@ namespace v8lm {
 			return {};
 		}
 
-		const auto& methods = plugin.GetMethodsData();
-		const auto& classes = plugin.GetClasses();
-
 		exportNames.clear();
 		exportFuncs.clear();
 		exportEnums.clear();
 		exportClasses.clear();
 
-		for (const auto& [method, addr] : methods) {
+		for (const auto& [method, addr] : plugin.GetMethodsData()) {
 			v8::Local<v8::Function> func = FindJavascriptMethod(addr);
 			if (func.IsEmpty()) {
 				ThrowException(std::format(LOG_PREFIX "Not found '{}' method while CreateInternalModule for '{}' plugin", method.GetName(), plugin.GetName()));
 				return {};
 			}
-			v8::Local<v8::String> name = MakeString(method.GetName());
-			exportNames.emplace_back(name);
-			exportFuncs.emplace(method.GetName(), JsExportData<v8::Function>{name, func});
+			exportNames.emplace_back(MakeString(method.GetName()));
+			exportFuncs.emplace(method.GetName(), v8::Global<v8::Function>(_isolate, func));
+		}
 
+		for (const auto& method : plugin.GetMethods()) {
 			CreateEnumObject(method);
 		}
 
-		for (const auto& classData : classes) {
-			CreateClassObject(classData);
+		for (const auto& class_ : plugin.GetClasses()) {
+			CreateClassObject(class_);
 		}
 
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
@@ -3973,14 +4013,17 @@ namespace v8lm {
 				v8::MemorySpan<const v8::Local<v8::String>>{ exportNames.begin(), exportNames.end() },
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					auto _isolate = context->GetIsolate();
-					for (const auto& [name, function] : exportFuncs) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, function.name, function.object));
+					for (auto& [name, function] : exportFuncs) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), function.Get(_isolate)));
+						g_v8lm.AddToObjectsVec(std::move(function));
 					}
-					for (const auto& [name, enumerator] : exportEnums) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, enumerator.name, enumerator.object));
+					for (auto& [name, enumerator] : exportEnums) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), enumerator.Get(_isolate)));
+						g_v8lm.AddToObjectsVec(std::move(enumerator));
 					}
-					for (const auto& [name, klass] : exportClasses) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, klass.name, klass.object));
+					for (auto& [name, class_] : exportClasses) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), class_.Get(_isolate)->GetFunction(context).ToLocalChecked()));
+						g_v8lm.AddToObjectsVec(std::move(class_));
 					}
 					return { True(_isolate) };
 				}
@@ -3990,15 +4033,12 @@ namespace v8lm {
 	}
 
 	v8::MaybeLocal<v8::Module> V8LanguageModule::CreateExternalModule(const Extension& plugin) {
-		const auto& methods = plugin.GetMethodsData();
-		const auto& classes = plugin.GetClasses();
-
 		exportNames.clear();
 		exportFuncs.clear();
 		exportEnums.clear();
 		exportClasses.clear();
 
-		for (const auto& [method, addr] : methods) {
+		for (const auto& [method, addr] : plugin.GetMethodsData()) {
 			JitCall call{};
 
 			const MemAddr callAddr = call.GetJitFunc(method, addr);
@@ -4026,14 +4066,16 @@ namespace v8lm {
 				return {};
 			}
 
-			v8::Local<v8::String> name = MakeString(method.GetName());
-			exportNames.emplace_back(name);
-			exportFuncs.emplace(method.GetName(), JsExportData<v8::Function>{name, func});
+			exportNames.emplace_back(MakeString(method.GetName()));
+			exportFuncs.emplace(method.GetName(), v8::Global<v8::Function>(_isolate, func));
+		}
+
+		for (const auto& method : plugin.GetMethods()) {
 			CreateEnumObject(method);
 		}
 
-		for (const auto& classData : classes) {
-			CreateClassObject(classData);
+		for (const auto& class_ : plugin.GetClasses()) {
+			CreateClassObject(class_);
 		}
 
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
@@ -4042,14 +4084,17 @@ namespace v8lm {
 				v8::MemorySpan<const v8::Local<v8::String>>{ exportNames.begin(), exportNames.end() },
 				[](v8::Local<v8::Context> context, v8::Local<v8::Module> module) -> v8::MaybeLocal<v8::Value> {
 					auto _isolate = context->GetIsolate();
-					for (const auto& [name, function] : exportFuncs) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, function.name, function.object));
+					for (auto& [name, function] : exportFuncs) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), function.Get(_isolate)));
+						g_v8lm.AddToObjectsVec(std::move(function));
 					}
-					for (const auto& [name, enumerator] : exportEnums) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, enumerator.name, enumerator.object));
+					for (auto& [name, enumerator] : exportEnums) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), enumerator.Get(_isolate)));
+						g_v8lm.AddToObjectsVec(std::move(enumerator));
 					}
-					for (const auto& [name, klass] : exportClasses) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, klass.name, klass.object));
+					for (auto& [name, class_] : exportClasses) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), class_.Get(_isolate)->GetFunction(context).ToLocalChecked()));
+						g_v8lm.AddToObjectsVec(std::move(class_));
 					}
 					return { True(_isolate) };
 				}
@@ -4069,6 +4114,11 @@ namespace v8lm {
 		funcObj->Get(_isolate)->Set(_isolate->GetCurrentContext(), v8::String::NewFromUtf8Literal(_isolate, "__address"), address).Check();
 	}
 
+	template<typename T>
+	void V8LanguageModule::AddToObjectsVec(v8::Global<T>&& anyObj) {
+		_jsObjects.emplace_back(std::move(anyObj));
+	}
+	
 	bool V8LanguageModule::IsDebugBuild() {
 		return V8LM_IS_DEBUG;
 	}
@@ -4630,6 +4680,7 @@ namespace v8lm {
 		return true;
 	}
 
+#define VERBOSE 0
 #if VERBOSE
 	[[maybe_unused]] void PrintModuleExports(v8::Isolate* isolate, v8::Local<v8::Context> context, v8::Local<v8::Module> module) {
 	    std::string buffer;

@@ -24,6 +24,7 @@
 using namespace plugify;
 
 namespace v8lm {
+	using JsObject = std::variant<v8::Global<v8::Function>, v8::Global<v8::Object>, v8::Global<v8::FunctionTemplate>>;
 	using JsFunction = std::shared_ptr<v8::Global<v8::Function>>;
 	using JsExternalMap = std::unordered_map<void*, JsFunction>;
 	using JsExceptionList = std::vector<std::pair<v8::Global<v8::Promise>, v8::Global<v8::Message>>>;
@@ -73,13 +74,14 @@ namespace v8lm {
 		v8::MaybeLocal<v8::Module> CreateExternalModule(const Extension& plugin);
 		void CreateEnumObject(const Property& paramType);
 		void CreateEnumObject(const Method& method);
-		v8::Local<v8::Function> CreateEmptyClass(const std::string& className);
 		v8::Local<v8::Value> ConvertAlias(const Alias& alias);
 		v8::Local<v8::Array> ConvertBinding(const Binding& binding);
 		v8::Local<v8::Value> GetInvalidValueForType(ValueType type, std::string_view invalidValue);
 		bool CreateClassObject(const Class& classData);
 		v8::Local<v8::Function> FindJavascriptMethod(MemAddr addr) const;
 		void AddToFunctionsMap(void* funcAddr, const JsFunction& funcObj);
+		template<typename T>
+		void AddToObjectsVec(v8::Global<T>&& anyObj);
 		JsFunction FindExternal(void* funcAddr) const;
 		void* FindInternal(v8::Local<v8::Function> object) const;
 
@@ -224,6 +226,7 @@ namespace v8lm {
 		};
 		std::map<UniqueId, PluginData> _pluginsMap;
 		std::vector<JsMethodData> _jsMethods;
+		std::vector<JsObject> _jsObjects;
 		struct JitHolder {
 			JitCallback jitCallback;
 			JitCall jitCall;
