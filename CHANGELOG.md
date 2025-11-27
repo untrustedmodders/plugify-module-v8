@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.1.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.2...v2.1.3) (2025-11-27)
+
+
+### Bug Fixes
+
+* add class support ([984e7b1](https://github.com/untrustedmodders/plugify-module-v8/commit/984e7b14a861746bbbed435858e809df5d948b66))
+* add class testing ([0f59247](https://github.com/untrustedmodders/plugify-module-v8/commit/0f59247cf2d70d47bd11785b335217b42de3aabd))
+* add more class generation features and rework synthetic module creation ([a92af7f](https://github.com/untrustedmodders/plugify-module-v8/commit/a92af7f829308aea25d10d0b1b1c82080ff7aa1f))
+* add synthetic module instantiation ([c2bd39d](https://github.com/untrustedmodders/plugify-module-v8/commit/c2bd39dc7964619f5cc1cf5889151682b3944aff))
+* add v8 binaries ([3f1a1e8](https://github.com/untrustedmodders/plugify-module-v8/commit/3f1a1e835d561cf080e2301be56e6f23242768a6))
+* change success/fail symbols ([960e590](https://github.com/untrustedmodders/plugify-module-v8/commit/960e590fbf45f4eae79ec1d3bd3049e9733d80b6))
+* generator typos ([9b3e133](https://github.com/untrustedmodders/plugify-module-v8/commit/9b3e13306c6a23520d4b07226499bae8a65c3b3a))
+* improve error handing on fatal jit generation ([0678812](https://github.com/untrustedmodders/plugify-module-v8/commit/0678812c9e521e6c892266e17c0b5bec633e24b6))
+* matrix4x4 formatting ([43aa0e7](https://github.com/untrustedmodders/plugify-module-v8/commit/43aa0e7224b358b1a82008da71ab1d689f74a304))
+* more style changes ([a92e88a](https://github.com/untrustedmodders/plugify-module-v8/commit/a92e88adc8c06bc97d31a6d7f68d64349f3ae7f0))
+* rework ToPath convertion ([50b17c9](https://github.com/untrustedmodders/plugify-module-v8/commit/50b17c925edf99ede13b6a59c521c8e5368d5a9d))
+* small refactor of methods ([00cfec3](https://github.com/untrustedmodders/plugify-module-v8/commit/00cfec389ee84ae19da766897609543e6c894c6c))
+* typo ([2f602db](https://github.com/untrustedmodders/plugify-module-v8/commit/2f602db9392f3a14a3308dcedd360f92272e9882))
+* update deps ([aa5bc7d](https://github.com/untrustedmodders/plugify-module-v8/commit/aa5bc7dbed7d296ac21c301c50b96046b3616fcd))
+* update notify ([f4f0fd5](https://github.com/untrustedmodders/plugify-module-v8/commit/f4f0fd5908867768f40052556c45d79b5af40554))
+
 ## [2.1.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.1...v2.1.2) (2025-10-08)
 
 
