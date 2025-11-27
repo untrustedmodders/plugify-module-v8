@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 if(POLICY CMP0092)
     cmake_policy(SET CMP0092 NEW) # Don't add -W3 warning level by default.
 endif()
@@ -20,7 +22,6 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/version.txt" VERSION_FILE_CONTENTS)
 string(STRIP "${VERSION_FILE_CONTENTS}" VERSION_FILE_CONTENTS)
 set(V8LM_VERSION "${VERSION_FILE_CONTENTS}" CACHE STRING "Set version name")
 set(V8LM_PACKAGE "v8_module" CACHE STRING "Set package name")
-set(V8LM_STATIC OFF CACHE BOOL "Build v8 as static?")
 string(REPLACE "v" "" V8LM_VERSION "${V8LM_VERSION}")
 string(REGEX REPLACE "[.+-]" ";" V8LM_VERSION_LIST ${V8LM_VERSION})
 list(GET V8LM_VERSION_LIST 0 V8LM_VERSION_MAJOR)
@@ -73,94 +74,83 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE ${V8LM_PCH_FILE})
 #
 # V8 Library
 #
-if(NOT V8LM_STATIC)
-    set(V8_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/v8/include/")
-    if(WIN32)
-        set(V8LM_LINK_LIBRARIES winmm dbghelp)
-        set(V8_COMPILE_DEFINITIONS _CRT_SECURE_NO_WARNINGS=1)
-    elseif(LINUX)
-        set(V8LM_LINK_LIBRARIES pthread)
-    endif()
-    add_library(v8_monolith SHARED IMPORTED)
-    if(WIN32)
-        set(V8LM_V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/windows/v8.dll")
-        set(V8LM_V8_RELEASE_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/windows/v8.lib")
+set(V8_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/v8/include/")
+if(WIN32)
+    set(V8_ARCH "win-64")
+    set(V8LM_LINK_LIBRARIES winmm dbghelp)
+    set(V8_COMPILE_DEFINITIONS _CRT_SECURE_NO_WARNINGS=1)
+elseif(LINUX)
+    set(V8_ARCH "linux-64")
+    set(V8LM_LINK_LIBRARIES pthread)
+endif()
 
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION ${V8LM_V8_RELEASE_LIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_IMPLIB ${V8LM_V8_RELEASE_IMPLIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION_RELEASE  ${V8LM_V8_RELEASE_LIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_IMPLIB_RELEASE ${V8LM_V8_RELEASE_IMPLIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${V8LM_V8_RELEASE_LIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_IMPLIB_RELWITHDEBINFO ${V8LM_V8_RELEASE_IMPLIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION_MINSIZEREL ${V8LM_V8_RELEASE_LIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_IMPLIB_MINSIZEREL ${V8LM_V8_RELEASE_IMPLIB})
-    elseif(LINUX)
-        set(V8LM_V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/linux/libv8.so")
+add_library(v8_monolith SHARED IMPORTED)
+if(WIN32)
+    #set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.dll")
+    #set(V8_DEBUG_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.lib")
+    set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.dll")
+    set(V8_RELEASE_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.lib")
 
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION ${V8LM_V8_RELEASE_LIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION_RELEASE ${V8LM_V8_RELEASE_LIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${V8LM_V8_RELEASE_LIB})
-        set_property(TARGET v8_monolith PROPERTY IMPORTED_LOCATION_MINSIZEREL ${V8LM_V8_RELEASE_LIB})
-    endif()
-    add_library(v8_libplatform SHARED IMPORTED)
-    if(WIN32)
-        set(V8LM_V8_PLAT_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/windows/v8_libplatform.dll")
-        set(V8LM_V8_PLAT_RELEASE_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/windows/v8_libplatform.lib")
+    set_target_properties(v8_monolith PROPERTIES
+    add#IMPORTED_LOCATION_DEBUG ${V8_DEBUG_LIB}
+            #IMPORTED_IMPLIB_DEBUG ${V8_DEBUG_IMPLIB}
+            IMPORTED_LOCATION_RELEASE ${V8_RELEASE_LIB}
+            IMPORTED_IMPLIB_RELEASE ${V8_RELEASE_IMPLIB}
+            IMPORTED_LOCATION_RELWITHDEBINFO ${V8_RELEASE_LIB}
+            IMPORTED_IMPLIB_RELWITHDEBINFO ${V8_RELEASE_IMPLIB}
+            IMPORTED_LOCATION_MINSIZEREL ${V8_RELEASE_LIB}
+            IMPORTED_IMPLIB_MINSIZEREL ${V8_RELEASE_IMPLIB}
+    )
+elseif(LINUX)
+    #set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8.so")
+    set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8.so")
 
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION ${V8LM_V8_PLAT_RELEASE_LIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_IMPLIB ${V8LM_V8_PLAT_RELEASE_IMPLIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION_RELEASE  ${V8LM_V8_PLAT_RELEASE_LIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_IMPLIB_RELEASE ${V8LM_V8_PLAT_RELEASE_IMPLIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${V8LM_V8_PLAT_RELEASE_LIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_IMPLIB_RELWITHDEBINFO ${V8LM_V8_PLAT_RELEASE_IMPLIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION_MINSIZEREL ${V8LM_V8_PLAT_RELEASE_LIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_IMPLIB_MINSIZEREL ${V8LM_V8_PLAT_RELEASE_IMPLIB})
-    elseif(LINUX)
-        set(V8LM_V8_PLAT_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/linux/libv8_libplatform.so")
+    set_target_properties(v8_monolith PROPERTIES
+            #IMPORTED_LOCATION_DEBUG ${V8_DEBUG_LIB}
+            IMPORTED_LOCATION_RELEASE ${V8_RELEASE_LIB}
+            IMPORTED_LOCATION_RELWITHDEBINFO ${V8_RELEASE_LIB}
+            IMPORTED_LOCATION_MINSIZEREL ${V8_RELEASE_LIB}
+    )
 
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION ${V8LM_V8_PLAT_RELEASE_LIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION_RELEASE ${V8LM_V8_PLAT_RELEASE_LIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION_RELWITHDEBINFO ${V8LM_V8_PLAT_RELEASE_LIB})
-        set_property(TARGET v8_libplatform PROPERTY IMPORTED_LOCATION_MINSIZEREL ${V8LM_V8_PLAT_RELEASE_LIB})
-    endif()
-    set(V8LM_LINK_LIBRARIES ${V8LM_LINK_LIBRARIES} v8_libplatform)
-    target_include_directories(v8_monolith INTERFACE ${V8_INCLUDE_DIRS})
-    target_link_libraries(v8_monolith INTERFACE ${V8LM_LINK_LIBRARIES})
-    if(MSVC)
-        target_compile_options(v8_monolith INTERFACE /wd4100 /wd4244)
-    else()
-        target_compile_options(v8_monolith INTERFACE -Wno-unused-parameter -Wno-conversion -Wno-template-id-cdtor -Wno-shadow)
-    endif()
+    set_property(TARGET ${PROJECT_NAME} PROPERTY LINK_FLAGS "-Wl,-rpath,\\\$ORIGIN/../v8")
+endif()
+
+add_library(v8_libplatform SHARED IMPORTED)
+if(WIN32)
+    set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform.dll")
+    set(V8_RELEASE_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform.lib")
+
+    set_target_properties(v8_libplatform PROPERTIES
+            #IMPORTED_LOCATION_DEBUG ${V8_DEBUG_LIB}
+            #IMPORTED_IMPLIB_DEBUG ${V8_DEBUG_IMPLIB}
+            IMPORTED_LOCATION_RELEASE ${V8_RELEASE_LIB}
+            IMPORTED_IMPLIB_RELEASE ${V8_RELEASE_IMPLIB}
+            IMPORTED_LOCATION_RELWITHDEBINFO ${V8_RELEASE_LIB}
+            IMPORTED_IMPLIB_RELWITHDEBINFO ${V8_RELEASE_IMPLIB}
+            IMPORTED_LOCATION_MINSIZEREL ${V8_RELEASE_LIB}
+            IMPORTED_IMPLIB_MINSIZEREL ${V8_RELEASE_IMPLIB}
+    )
+elseif(LINUX)
+    #set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8_libplatform.so")
+    set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8_libplatform.so")
+
+    set_target_properties(v8_libplatform PROPERTIES
+            #IMPORTED_LOCATION_DEBUG ${V8_DEBUG_LIB}
+            IMPORTED_LOCATION_RELEASE ${V8_RELEASE_LIB}
+            IMPORTED_LOCATION_RELWITHDEBINFO ${V8_RELEASE_LIB}
+            IMPORTED_LOCATION_MINSIZEREL ${V8_RELEASE_LIB}
+    )
+
+    set_property(TARGET ${PROJECT_NAME} PROPERTY LINK_FLAGS "-Wl,-rpath,\\\$ORIGIN/../v8")
+endif()
+
+set(V8LM_LINK_LIBRARIES ${V8LM_LINK_LIBRARIES} v8_libplatform)
+target_include_directories(v8_monolith INTERFACE ${V8_INCLUDE_DIRS})
+target_link_libraries(v8_monolith INTERFACE ${V8LM_LINK_LIBRARIES})
+if(MSVC)
+    target_compile_options(v8_monolith INTERFACE /wd4100 /wd4244)
 else()
-    if(WIN32)
-        set(V8_VERSION "11.9.169") # 13.1.2
-        set(V8_CONFIG_STR "x64.release")
-        set(V8_IS_DEBUG OFF)
-        set(V8_TARGET_NAME "v8_monolith")
-        set(V8_IS_COMPONENT_BUILD OFF)
-        set(V8_IS_CLANG OFF)
-        set(V8_TARGET_CPU "x64")
-        set(V8_USE_CUSTOM_LIBCXX OFF)
-        set(V8_USE_LLD OFF)
-        set(V8_V8_MONOLITHIC ON)
-        set(V8_V8_USE_EXTERNAL_STARTUP_DATA OFF)
-        set(V8LM_LINK_LIBRARIES winmm dbghelp)
-    else()
-        set(V8_VERSION "11.9.169") # 13.1.2
-        set(V8_CONFIG_STR "x64.release")
-        set(V8_IS_DEBUG OFF)
-        set(V8_TARGET_NAME "v8_monolith")
-        set(V8_IS_COMPONENT_BUILD OFF)
-        set(V8_IS_CLANG OFF)
-        set(V8_TARGET_CPU "x64")
-        set(V8_USE_CUSTOM_LIBCXX OFF)
-        set(V8_USE_LLD OFF)
-        set(V8_V8_MONOLITHIC ON)
-        set(V8_V8_USE_EXTERNAL_STARTUP_DATA OFF)
-        set(V8LM_LINK_LIBRARIES pthread)
-    endif()
-    set(V8_ROOT ${CMAKE_BINARY_DIR})
-    add_subdirectory(external/v8)
+    target_compile_options(v8_monolith INTERFACE -Wno-unused-parameter -Wno-conversion -Wno-template-id-cdtor -Wno-shadow)
 endif()
 
 if(NOT COMPILER_SUPPORTS_FORMAT)

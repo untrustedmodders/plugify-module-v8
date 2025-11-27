@@ -16,16 +16,19 @@ fi
 # Create the target directories
 mkdir -p $PREFIX/bin
 mkdir -p $PREFIX/lib
+mkdir -p $PREFIX/v8
 mkdir -p $PREFIX
 
 # Copy the shared library and module file
 cp bin/libplugify-module-v8.$LIB_EXT $PREFIX/bin/
 cp -r lib/* $PREFIX/lib/
+cp -r v8/* $PREFIX/v8/
 cp plugify-module-v8.pmodule $PREFIX/
 
 # Set proper permissions
 chmod 755 $PREFIX/bin/libplugify-module-v8.$LIB_EXT
 chmod -R 755 $PREFIX/lib
+chmod -R 755 $PREFIX/v8
 chmod 644 $PREFIX/plugify-module-v8.pmodule
 
 # Create activation scripts for proper library path

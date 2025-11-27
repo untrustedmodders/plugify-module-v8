@@ -21,6 +21,7 @@ build:
     - "*/librt.so.*"          # [linux]
     - "*/libplugify.so*"      # [linux]
     - "*/libv8.so*"           # [linux]
+    - "*/libv8*.so*"          # [linux]
     # macOS system libraries and frameworks
     - "/usr/lib/libc++.1.dylib"        # [osx]
     - "/usr/lib/libSystem.B.dylib"     # [osx]
@@ -33,11 +34,18 @@ build:
     - "@loader_path/libplugify.dylib"  # [osx]
     - "*/libv8.dylib"                  # [osx]
     - "*/libv8.*.dylib"                # [osx]
+    - "*/libv8*.*.dylib"               # [osx]
     - "@rpath/libv8.dylib"             # [osx]
     - "@loader_path/libv8.dylib"       # [osx]
     # Windows libraries
     - "*/plugify.dll"         # [win]
     - "*/v8.dll"              # [win]
+    - "*/v8_icui18n.dll"      # [win]
+    - "*/v8_icuuc.dll"        # [win]
+    - "*/v8_libbase.dll"      # [win]
+    - "*/v8_libplatform.dll"  # [win]
+    - "*/v8_zlib.dll"         # [win]
+    - "*/v8system.dll"        # [win]
 
 requirements:
   run:
@@ -49,15 +57,18 @@ test:
     # Linux tests
     - test -f $PREFIX/bin/libplugify-module-v8.so  # [linux]
     - test -d $PREFIX/lib                          # [linux]
+    - test -d $PREFIX/v8                           # [linux]
     - test -f $PREFIX/plugify-module-v8.pmodule    # [linux]
     # macOS tests
     - test -f $PREFIX/bin/libplugify-module-v8.dylib  # [osx]
     - test -d $PREFIX/lib                             # [osx]
+    - test -d $PREFIX/v8                              # [osx]
     - test -f $PREFIX/plugify-module-v8.pmodule       # [osx]
     - otool -L $PREFIX/bin/libplugify-module-v8.dylib # [osx]
     # Windows tests
     - if not exist %PREFIX%\\bin\\plugify-module-v8.dll exit 1  # [win]
     - if not exist %PREFIX%\\lib exit 1                         # [win]
+    - if not exist %PREFIX%\\v8 exit 1                          # [win]
     - if not exist %PREFIX%\\plugify-module-v8.pmodule exit 1   # [win]
 
 about:

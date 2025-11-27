@@ -4,11 +4,13 @@ REM bld.bat - For Windows builds
 REM Create the target directories
 if not exist "%PREFIX%\bin" mkdir "%PREFIX%\bin"
 if not exist "%PREFIX%\lib" mkdir "%PREFIX%\lib"
+if not exist "%PREFIX%\v8" mkdir "%PREFIX%\v8"
 if not exist "%PREFIX%" mkdir "%PREFIX%"
 
 REM Copy the DLL and module file
 copy bin\plugify-module-v8.dll "%PREFIX%\bin\" || exit 1
 xcopy lib "%PREFIX%\lib" /E /Y /I
+xcopy lib "%PREFIX%\v8" /E /Y /I
 copy plugify-module-v8.pmodule "%PREFIX%\" || exit 1
 
 REM Create activation scripts
