@@ -1,26 +1,26 @@
 namespace builtin {
 #if V8LM_PLATFORM_WINDOWS
 	static std::string GetErrorMessage() {
-		DWORD dwErrorCode = ::GetLastError();
-		if (dwErrorCode == 0) {
+		DWORD error = ::GetLastError();
+		if (error == 0) {
 			return {}; // No error message has been recorded
 		}
 		
-		LPSTR messageBuffer = NULL;
-		const DWORD size = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM  | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		LPSTR buffer = NULL;
+		const DWORD size = ::FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM  | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
 										  NULL, // (not used with FORMAT_MESSAGE_FROM_SYSTEM)
-										  dwErrorCode,
+										  error,
 										  MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-										  reinterpret_cast<LPSTR>(&messageBuffer),
+										  reinterpret_cast<LPSTR>(&buffer),
 										  0,
 										  NULL);
 		if (!size) {
-			return std::format("Unknown error code: {}", dwErrorCode);
+			return std::format("Unknown error code: {}", error);
 		}
 
-		auto deleter = [](void* p) { ::LocalFree(p); };
-		std::unique_ptr<char, decltype(deleter)> ptrBuffer(messageBuffer, deleter);
-		return { ptrBuffer.get(), size };
+		std::string message(buffer, size);
+		::LocalFree(buffer);
+		return message;
 	}
 	
 #define ToNString ToWString
@@ -79,7 +79,7 @@ namespace builtin {
 		}
 
 		// Function to handle the HTTP request asynchronously using WinHTTP
-		void fetchAsync(std::wstring url, Type type, std::string body, Callback onSuccess, Callback onError) {
+		inline void fetchAsync(std::wstring url, Type type, std::string body, Callback onSuccess, Callback onError) {
 			std::thread([url = std::move(url), type, body = std::move(body), onSuccess = std::move(onSuccess), onError = std::move(onError)]() {
 				HINTERNET hConnect = nullptr;
 				HINTERNET hRequest = nullptr;
