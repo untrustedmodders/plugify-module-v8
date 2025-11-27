@@ -46,6 +46,7 @@ namespace v8lm {
 #include "builtin/dns.hpp"
 #include "builtin/fetch.hpp"
 #include "builtin/fs.hpp"
+#include "builtin/gc.hpp"
 #include "builtin/http.hpp"
 #include "builtin/https.hpp"
 #include "builtin/net.hpp"
@@ -3324,6 +3325,9 @@ namespace v8lm {
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "clearInterval"),
 					v8::FunctionTemplate::New(_isolate, builtin::timers::ClearInterval)->GetFunction(context).ToLocalChecked()).Check();
 
+		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "gc"),
+					v8::FunctionTemplate::New(_isolate, builtin::gc::ForceGC)->GetFunction(context).ToLocalChecked()).Check();
+
 		v8::Local<v8::Object> pps = v8::Object::New(_isolate);
 		global->Set(context, v8::String::NewFromUtf8Literal(_isolate, "pps"), pps).Check();
 
@@ -3690,72 +3694,10 @@ namespace v8lm {
 	}
 
 	namespace {
-		template<typename K, typename V>
-		class VectorMap {
-		public:
-			using pair_type = std::pair<K,V>;
-			using iterator = typename std::vector<pair_type>::iterator;
-			using const_iterator = typename std::vector<pair_type>::const_iterator;
-
-			// Access or insert
-			V& operator[](const K& key) {
-				auto it = std::find_if(data.begin(), data.end(),
-									   [&](const pair_type& p){ return p.first == key; });
-				if (it == data.end()) {
-					data.emplace_back(key, V{});
-					return data.back().second;
-				}
-				return it->second;
-			}
-
-			// Emplace a new element if key doesn't exist
-			template<typename... Args>
-			std::pair<iterator, bool> emplace(const K& key, Args&&... args) {
-				auto it = std::find_if(data.begin(), data.end(),
-									   [&](const pair_type& p){ return p.first == key; });
-				if (it != data.end()) {
-					return {it, false}; // already exists
-				}
-				data.emplace_back(key, V(std::forward<Args>(args)...));
-				return {std::prev(data.end()), true};
-			}
-
-			// Find element, returns iterator or end()
-			iterator find(const K& key) {
-				return std::find_if(data.begin(), data.end(),
-									[&](const pair_type& p){ return p.first == key; });
-			}
-
-			const_iterator find(const K& key) const {
-				return std::find_if(data.begin(), data.end(),
-									[&](const pair_type& p){ return p.first == key; });
-			}
-
-			bool contains(const K& key) const {
-				return find(key) != end();
-			}
-
-			void clear() {
-				data.clear();
-			}
-
-			// Iteration
-			iterator begin() { return data.begin(); }
-			iterator end() { return data.end(); }
-			const_iterator begin() const { return data.begin(); }
-			const_iterator end() const { return data.end(); }
-
-			// Size
-			std::size_t size() const { return data.size(); }
-
-		private:
-			std::vector<pair_type> data;
-		};
-
 		std::vector<v8::Local<v8::String>> exportNames;
-		VectorMap<std::string_view, v8::Global<v8::Function>> exportFuncs;
-		VectorMap<std::string_view, v8::Global<v8::Object>> exportEnums;
-		VectorMap<std::string_view, v8::Global<v8::FunctionTemplate>> exportClasses;
+		std::unordered_map<std::string, v8::Global<v8::Object>> exportFuncs;
+		std::unordered_map<std::string, v8::Global<v8::Object>> exportEnums;
+		std::unordered_map<std::string, v8::Global<v8::Object>> exportClasses;
 	}
 
 	void V8LanguageModule::CreateEnumObject(const Property& paramType) {
@@ -3960,12 +3902,12 @@ namespace v8lm {
 			_provider->Log(std::format(LOG_PREFIX "{}: call of 'bindClassMethods' failed", className), Severity::Error);
 		}
 
-        if (!result->IsObject()) {
+        if (!result->IsFunction()) {
         	return false;
         }
 
 		exportNames.emplace_back(MakeString(className));
-		exportClasses.emplace(className, v8::Global<v8::FunctionTemplate>(_isolate, classTpl));
+		exportClasses.emplace(className, v8::Global<v8::Object>(_isolate, result.As<v8::Function>()));
 
         return true;
     }
@@ -3996,15 +3938,15 @@ namespace v8lm {
 				return {};
 			}
 			exportNames.emplace_back(MakeString(method.GetName()));
-			exportFuncs.emplace(method.GetName(), v8::Global<v8::Function>(_isolate, func));
+			exportFuncs.emplace(method.GetName(), v8::Global<v8::Object>(_isolate, func));
 		}
 
 		for (const auto& method : plugin.GetMethods()) {
 			CreateEnumObject(method);
 		}
 
-		for (const auto& class_ : plugin.GetClasses()) {
-			CreateClassObject(class_);
+		for (const auto& cls : plugin.GetClasses()) {
+			CreateClassObject(cls);
 		}
 
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
@@ -4021,9 +3963,9 @@ namespace v8lm {
 						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), enumerator.Get(_isolate)));
 						g_v8lm.AddToObjectsVec(std::move(enumerator));
 					}
-					for (auto& [name, class_] : exportClasses) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), class_.Get(_isolate)->GetFunction(context).ToLocalChecked()));
-						g_v8lm.AddToObjectsVec(std::move(class_));
+					for (auto& [name, cls] : exportClasses) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), cls.Get(_isolate)));
+						g_v8lm.AddToObjectsVec(std::move(cls));
 					}
 					return { True(_isolate) };
 				}
@@ -4067,15 +4009,15 @@ namespace v8lm {
 			}
 
 			exportNames.emplace_back(MakeString(method.GetName()));
-			exportFuncs.emplace(method.GetName(), v8::Global<v8::Function>(_isolate, func));
+			exportFuncs.emplace(method.GetName(), v8::Global<v8::Object>(_isolate, func));
 		}
 
 		for (const auto& method : plugin.GetMethods()) {
 			CreateEnumObject(method);
 		}
 
-		for (const auto& class_ : plugin.GetClasses()) {
-			CreateClassObject(class_);
+		for (const auto& cls : plugin.GetClasses()) {
+			CreateClassObject(cls);
 		}
 
 		v8::Local<v8::Module> moduleObject = v8::Module::CreateSyntheticModule(
@@ -4092,9 +4034,9 @@ namespace v8lm {
 						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), enumerator.Get(_isolate)));
 						g_v8lm.AddToObjectsVec(std::move(enumerator));
 					}
-					for (auto& [name, class_] : exportClasses) {
-						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), class_.Get(_isolate)->GetFunction(context).ToLocalChecked()));
-						g_v8lm.AddToObjectsVec(std::move(class_));
+					for (auto& [name, cls] : exportClasses) {
+						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), cls.Get(_isolate)));
+						g_v8lm.AddToObjectsVec(std::move(cls));
 					}
 					return { True(_isolate) };
 				}
@@ -4114,8 +4056,7 @@ namespace v8lm {
 		funcObj->Get(_isolate)->Set(_isolate->GetCurrentContext(), v8::String::NewFromUtf8Literal(_isolate, "__address"), address).Check();
 	}
 
-	template<typename T>
-	void V8LanguageModule::AddToObjectsVec(v8::Global<T>&& anyObj) {
+	void V8LanguageModule::AddToObjectsVec(v8::Global<v8::Object>&& anyObj) {
 		_jsObjects.emplace_back(std::move(anyObj));
 	}
 	

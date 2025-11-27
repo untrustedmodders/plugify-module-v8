@@ -2393,7 +2393,7 @@ export const counterWithoutDestructor = () => {
     const isPositive = counter.IsPositive();
     log(`✓ Is positive: ${isPositive}`);
 
-    if (value === 152 && isPositive) {
+    if (value === 152n && isPositive) {
         log("✓ TEST 4 PASSED: Counter operations working\n");
         return "true";
     } else {
@@ -2421,7 +2421,7 @@ export const staticMethods = () => {
     const sumResult = master.Counter.Sum([1, 2, 3, 4, 5]);
     log(`✓ Counter.Sum([1,2,3,4,5]) = ${sumResult} (expected 15)`);
 
-    if (cmp1 === 1 && cmp2 === -1 && cmp3 === 0 && sumResult === 15) {
+    if (cmp1 === 1 && cmp2 === -1 && cmp3 === 0 && sumResult === 15n) {
         log("✓ TEST 5 PASSED: Static methods working\n");
         return "true";
     } else {
@@ -2440,7 +2440,7 @@ export const memoryLeakDetection = () => {
     log(`✓ Created resource ID: ${leaked.GetId()}`);
     leaked = null;
 
-    // Force garbage collection if available (requires --expose-gc flag)
+    // Force garbage collection if available
     if (global.gc) {
         global.gc();
     }
