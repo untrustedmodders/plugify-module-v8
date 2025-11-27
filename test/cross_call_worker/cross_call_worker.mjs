@@ -2286,8 +2286,8 @@ export const basicLifecycle = () => {
     // JavaScript doesn't have context managers, so we use try/finally
     const resource = new master.ResourceHandle(1, "Test1");
     try {
-        log(`✓ Created ResourceHandle ID: ${resource.GetId()}`);
-        log(`✓ Alive count increased: ${master.ResourceHandle.GetAliveCount()}`);
+        log(`v Created ResourceHandle ID: ${resource.GetId()}`);
+        log(`v Alive count increased: ${master.ResourceHandle.GetAliveCount()}`);
     } finally {
         // Manually trigger cleanup if needed
         // In JS, the object will be GC'd when no longer referenced
@@ -2298,15 +2298,15 @@ export const basicLifecycle = () => {
     const finalCreated = master.ResourceHandle.GetTotalCreated();
     const finalDestroyed = master.ResourceHandle.GetTotalDestroyed();
 
-    log(`✓ Destructor called, alive count: ${finalAlive}`);
-    log(`✓ Total created: ${finalCreated - initialCreated}`);
-    log(`✓ Total destroyed: ${finalDestroyed}`);
+    log(`v Destructor called, alive count: ${finalAlive}`);
+    log(`v Total created: ${finalCreated - initialCreated}`);
+    log(`v Total destroyed: ${finalDestroyed}`);
 
     if (finalAlive === initialAlive && finalCreated === finalDestroyed) {
-        log("✓ TEST 1 PASSED: Lifecycle working correctly\n");
+        log("v TEST 1 PASSED: Lifecycle working correctly\n");
         return "true";
     } else {
-        log("✗ TEST 1 FAILED: Lifecycle mismatch!\n");
+        log("x TEST 1 FAILED: Lifecycle mismatch!\n");
         return "false";
     }
 }
@@ -2321,23 +2321,23 @@ export const stateManagement = () => {
     resource.IncrementCounter();
     resource.IncrementCounter();
     const counter = resource.GetCounter();
-    log(`✓ Counter incremented 3 times: ${counter}`);
+    log(`v Counter incremented 3 times: ${counter}`);
 
     resource.SetName("StateTestModified");
     const newName = resource.GetName();
-    log(`✓ Name changed to: ${newName}`);
+    log(`v Name changed to: ${newName}`);
 
     resource.AddData(1.1);
     resource.AddData(2.2);
     resource.AddData(3.3);
     const data = resource.GetData();
-    log(`✓ Added ${data.length} data points`);
+    log(`v Added ${data.length} data points`);
 
     if (counter === 3 && newName === "StateTestModified" && data.length === 3) {
-        log("✓ TEST 2 PASSED: State management working\n");
+        log("v TEST 2 PASSED: State management working\n");
         return "true";
     } else {
-        log("✗ TEST 2 FAILED: State not preserved!\n");
+        log("x TEST 2 FAILED: State not preserved!\n");
         return "false";
     }
 }
@@ -2353,11 +2353,11 @@ export const multipleInstances = () => {
     const r3 = new master.ResourceHandle();
 
     const duringAlive = master.ResourceHandle.GetAliveCount();
-    log(`✓ Created 3 instances, alive: ${duringAlive}`);
-    log(`✓ R1 ID: ${r1.GetId()}, R2 ID: ${r2.GetId()}, R3 ID: ${r3.GetId()}`);
+    log(`v Created 3 instances, alive: ${duringAlive}`);
+    log(`v R1 ID: ${r1.GetId()}, R2 ID: ${r2.GetId()}, R3 ID: ${r3.GetId()}`);
 
     if (duringAlive - beforeAlive === 3) {
-        log("✓ All 3 instances tracked correctly");
+        log("v All 3 instances tracked correctly");
     }
 
     // Let them go out of scope / trigger GC
@@ -2369,10 +2369,10 @@ export const multipleInstances = () => {
     const afterAlive = master.ResourceHandle.GetAliveCount();
 
     if (afterAlive === beforeAlive) {
-        log("✓ TEST 3 PASSED: All instances destroyed properly\n");
+        log("v TEST 3 PASSED: All instances destroyed properly\n");
         return "true";
     } else {
-        log(`✗ TEST 3 FAILED: Leak detected! Before: ${beforeAlive}, After: ${afterAlive}\n`);
+        log(`x TEST 3 FAILED: Leak detected! Before: ${beforeAlive}, After: ${afterAlive}\n`);
         return "false";
     }
 }
@@ -2382,22 +2382,22 @@ export const counterWithoutDestructor = () => {
     log("────────────────────────────────");
 
     const counter = new master.Counter(100);
-    log(`✓ Created Counter with value: ${counter.GetValue()}`);
+    log(`v Created Counter with value: ${counter.GetValue()}`);
 
     counter.Increment();
     counter.Increment();
     counter.Add(50);
     const value = counter.GetValue();
-    log(`✓ After operations, value: ${value}`);
+    log(`v After operations, value: ${value}`);
 
     const isPositive = counter.IsPositive();
-    log(`✓ Is positive: ${isPositive}`);
+    log(`v Is positive: ${isPositive}`);
 
     if (value === 152n && isPositive) {
-        log("✓ TEST 4 PASSED: Counter operations working\n");
+        log("v TEST 4 PASSED: Counter operations working\n");
         return "true";
     } else {
-        log("✗ TEST 4 FAILED: Counter operations incorrect\n");
+        log("x TEST 4 FAILED: Counter operations incorrect\n");
         return "false";
     }
 }
@@ -2409,23 +2409,23 @@ export const staticMethods = () => {
     const alive = master.ResourceHandle.GetAliveCount();
     const created = master.ResourceHandle.GetTotalCreated();
     const destroyed = master.ResourceHandle.GetTotalDestroyed();
-    log(`✓ ResourceHandle stats - Alive: ${alive}, Created: ${created}, Destroyed: ${destroyed}`);
+    log(`v ResourceHandle stats - Alive: ${alive}, Created: ${created}, Destroyed: ${destroyed}`);
 
     const cmp1 = master.Counter.Compare(100, 50);
     const cmp2 = master.Counter.Compare(50, 100);
     const cmp3 = master.Counter.Compare(50, 50);
-    log(`✓ Counter.Compare(100, 50) = ${cmp1} (expected 1)`);
-    log(`✓ Counter.Compare(50, 100) = ${cmp2} (expected -1)`);
-    log(`✓ Counter.Compare(50, 50) = ${cmp3} (expected 0)`);
+    log(`v Counter.Compare(100, 50) = ${cmp1} (expected 1)`);
+    log(`v Counter.Compare(50, 100) = ${cmp2} (expected -1)`);
+    log(`v Counter.Compare(50, 50) = ${cmp3} (expected 0)`);
 
     const sumResult = master.Counter.Sum([1, 2, 3, 4, 5]);
-    log(`✓ Counter.Sum([1,2,3,4,5]) = ${sumResult} (expected 15)`);
+    log(`v Counter.Sum([1,2,3,4,5]) = ${sumResult} (expected 15)`);
 
     if (cmp1 === 1 && cmp2 === -1 && cmp3 === 0 && sumResult === 15n) {
-        log("✓ TEST 5 PASSED: Static methods working\n");
+        log("v TEST 5 PASSED: Static methods working\n");
         return "true";
     } else {
-        log("✗ TEST 5 FAILED: Static methods incorrect\n");
+        log("x TEST 5 FAILED: Static methods incorrect\n");
         return "false";
     }
 }
@@ -2437,7 +2437,7 @@ export const memoryLeakDetection = () => {
     const beforeAlive = master.ResourceHandle.GetAliveCount();
 
     let leaked = new master.ResourceHandle(999, "IntentionalLeak");
-    log(`✓ Created resource ID: ${leaked.GetId()}`);
+    log(`v Created resource ID: ${leaked.GetId()}`);
     leaked = null;
 
     // Force garbage collection if available
@@ -2447,14 +2447,14 @@ export const memoryLeakDetection = () => {
 
     const afterAlive = master.ResourceHandle.GetAliveCount();
 
-    log(`✓ Before leak test: ${beforeAlive} alive`);
-    log(`✓ After GC: ${afterAlive} alive`);
+    log(`v Before leak test: ${beforeAlive} alive`);
+    log(`v After GC: ${afterAlive} alive`);
 
     if (afterAlive === beforeAlive) {
-        log("✓ TEST 6 PASSED: Finalizer cleaned up leaked resource\n");
+        log("v TEST 6 PASSED: Finalizer cleaned up leaked resource\n");
         return "true";
     } else {
-        log("✗ TEST 6 FAILED: Resource still alive (will be cleaned at plugin shutdown)\n");
+        log("x TEST 6 FAILED: Resource still alive (will be cleaned at plugin shutdown)\n");
         return "false";
     }
 }
@@ -2470,11 +2470,11 @@ export const exceptionHandling = () => {
 
     try {
         resource.GetId();
-        log("✗ TEST 7 FAILED: No exception thrown!\n");
+        log("x TEST 7 FAILED: No exception thrown!\n");
         return "false";
     } catch (ex) {
-        log(`✓ Caught expected exception: ${ex.constructor.name}`);
-        log("✓ TEST 7 PASSED: Exception handling working\n");
+        log(`v Caught expected exception: ${ex.constructor.name}`);
+        log("v TEST 7 PASSED: Exception handling working\n");
         return "true";
     }
 }
@@ -2487,39 +2487,39 @@ export const ownershipTransfer = () => {
     const initialCreated = master.ResourceHandle.GetTotalCreated();
 
     const resource = new master.ResourceHandle(42, "OwnershipTest");
-    log(`✓ Created ResourceHandle ID: ${resource.GetId()}`);
+    log(`v Created ResourceHandle ID: ${resource.GetId()}`);
 
     // Get internal wrapper (simulate internal pointer access)
     const wrapper = resource.get();
-    log(`✓ get() returned internal wrapper: ${wrapper}`);
+    log(`v get() returned internal wrapper: ${wrapper}`);
 
     // Release ownership
     const handle = resource.release();
-    log(`✓ release() returned handle: ${handle}`);
+    log(`v release() returned handle: ${handle}`);
 
     if (wrapper !== handle) {
-        log(`✗ TEST 8 FAILED: get() did not return internal wrapper, got ${typeof wrapper}`);
+        log(`x TEST 8 FAILED: get() did not return internal wrapper, got ${typeof wrapper}`);
         return "false";
     }
 
     try {
         resource.GetId();
-        log("✗ TEST 8 FAILED: ResourceHandle still accessible after release()");
+        log("x TEST 8 FAILED: ResourceHandle still accessible after release()");
         return "false";
     } catch (ex) {
-        log("✓ ResourceHandle is invalid after release()");
+        log("v ResourceHandle is invalid after release()");
     }
 
     // Check that handle is now owned externally and alive count updated correctly
     const aliveAfterRelease = master.ResourceHandle.GetAliveCount();
     if (aliveAfterRelease !== initialAlive + 1) {
-        log(`✗ TEST 8 FAILED: Alive count mismatch after release. Expected ${initialAlive + 1}, got ${aliveAfterRelease}`);
+        log(`x TEST 8 FAILED: Alive count mismatch after release. Expected ${initialAlive + 1}, got ${aliveAfterRelease}`);
         return "false";
     }
 
     master.ResourceHandleDestroy(handle);
 
-    log("✓ TEST 8 PASSED: Ownership transfer working correctly\n");
+    log("v TEST 8 PASSED: Ownership transfer working correctly\n");
     return "true";
 }
 
