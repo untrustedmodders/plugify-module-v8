@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.4](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.3...v2.1.4) (2025-11-29)
+
+
+### Bug Fixes
+
+* trying to fix win build on github ([ea39d3a](https://github.com/untrustedmodders/plugify-module-v8/commit/ea39d3a0629ce6076ebc62c250956ad9b610d1c1))
+
 ## [2.1.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.2...v2.1.3) (2025-11-27)
 
 
