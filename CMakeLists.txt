@@ -86,8 +86,8 @@ endif()
 
 add_library(v8_monolith SHARED IMPORTED)
 if(WIN32)
-    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_d.dll")
-    set(V8_DEBUG_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_d.lib")
+    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.dll")
+    set(V8_DEBUG_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.lib")
     set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.dll")
     set(V8_RELEASE_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8.lib")
 
@@ -102,7 +102,7 @@ if(WIN32)
             IMPORTED_IMPLIB_MINSIZEREL ${V8_RELEASE_IMPLIB}
     )
 elseif(LINUX)
-    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8_d.so")
+    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8.so")
     set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8.so")
 
     set_target_properties(v8_monolith PROPERTIES
@@ -117,8 +117,8 @@ endif()
 
 add_library(v8_libplatform SHARED IMPORTED)
 if(WIN32)
-    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform_d.dll")
-    set(V8_DEBUG_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform_d.lib")
+    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform.dll")
+    set(V8_DEBUG_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform.lib")
     set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform.dll")
     set(V8_RELEASE_IMPLIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/v8_libplatform.lib")
 
@@ -133,7 +133,7 @@ if(WIN32)
             IMPORTED_IMPLIB_MINSIZEREL ${V8_RELEASE_IMPLIB}
     )
 elseif(LINUX)
-    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8_libplatform_d.so")
+    set(V8_DEBUG_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8_libplatform.so")
     set(V8_RELEASE_LIB "${CMAKE_CURRENT_SOURCE_DIR}/v8/libs/${V8_ARCH}/libv8_libplatform.so")
 
     set_target_properties(v8_libplatform PROPERTIES
