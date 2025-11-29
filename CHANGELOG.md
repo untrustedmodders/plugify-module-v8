@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.6](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.5...v2.1.6) (2025-11-29)
+
+
+### Bug Fixes
+
+* add symlink of v8 libs to build ([08ced28](https://github.com/untrustedmodders/plugify-module-v8/commit/08ced280971a9b58f176d90d69716a7a68e9289c))
+
 ## [2.1.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.4...v2.1.5) (2025-11-29)
 
 
