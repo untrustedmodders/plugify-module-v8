@@ -136,7 +136,7 @@ jobs:
           cp -r "$(readlink -f build/lib)" build/output
           V8_PATH=$(readlink build/v8)
           mkdir -p build/output/v8
-          cp -r $V8_PATH/${{ matrix.platform }}/* build/output/v8
+          cp -r $V8_PATH/${{ matrix.platform }}/libs/* build/output/v8
           # Cleanup dev files
           find build/output -type f \( -name "*.exp" -o -name "*.ilk" -o -name "*.lib" -o -name "*.pdb" \) -delete
 
