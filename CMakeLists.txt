@@ -242,5 +242,9 @@ if(V8LM_GITHUB_ACTIONS)
             "${CMAKE_CURRENT_SOURCE_DIR}/lib"
             "${CMAKE_CURRENT_BINARY_DIR}/lib"
     )
+    execute_process(COMMAND cmake -E create_symlink
+        "${CMAKE_SOURCE_DIR}/v8"
+        "${CMAKE_BINARY_DIR}/v8"
+    )
 endif()
 
