@@ -73,7 +73,7 @@ namespace v8lm {
 		v8::MaybeLocal<v8::Module> CreateExternalModule(const Extension& plugin);
 		void CreateEnumObject(const Property& paramType);
 		void CreateEnumObject(const Method& method);
-		v8::Local<v8::Value> ConvertAlias(const Alias& alias);
+		v8::Local<v8::Value> ConvertAlias(const std::optional<Alias>& alias);
 		v8::Local<v8::Array> ConvertBinding(const Binding& binding);
 		v8::Local<v8::Value> GetInvalidValueForType(ValueType type, std::string_view invalidValue);
 		bool CreateClassObject(const Class& classData);

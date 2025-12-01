@@ -3735,8 +3735,8 @@ namespace v8lm {
 		}
 	}
 
-	v8::Local<v8::Value> V8LanguageModule::ConvertAlias(const Alias& alias) {
-		if (alias.GetName().empty()) {
+	v8::Local<v8::Value> V8LanguageModule::ConvertAlias(const std::optional<Alias>& alias) {
+		if (!alias) {
 			return v8::Null(_isolate);
 		}
 
@@ -3744,8 +3744,8 @@ namespace v8lm {
 
 		// Create array [name, owner]{
 		v8::Local<v8::Array> arr = v8::Array::New(_isolate, 2);
-		arr->Set(context, 0, CreateJsObject(alias.GetName())).Check();
-		arr->Set(context, 1, CreateJsObject(alias.IsOwner())).Check();
+		arr->Set(context, 0, CreateJsObject(alias->GetName())).Check();
+		arr->Set(context, 1, CreateJsObject(alias->IsOwner())).Check();
 		return arr;
 	}
 
