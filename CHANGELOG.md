@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.9](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.8...v2.1.9) (2025-12-01)
+
+
+### Bug Fixes
+
+* add class construction with handle if no other ctors are available ([35537ab](https://github.com/untrustedmodders/plugify-module-v8/commit/35537abe35b1d9612d80ff2c7e7a378ff52c9e55))
+* update plugify ([08665ea](https://github.com/untrustedmodders/plugify-module-v8/commit/08665eac323bd75e1c265d08894a357a25d4fe34))
+
 ## [2.1.8](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.7...v2.1.8) (2025-11-29)
 
 
