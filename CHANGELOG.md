@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.10](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.9...v2.1.10) (2025-12-02)
+
+
+### Bug Fixes
+
+* add missing field ([be7fe3d](https://github.com/untrustedmodders/plugify-module-v8/commit/be7fe3dfc1a7c588b2f358f6bd0753810000de02))
+
 ## [2.1.9](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.8...v2.1.9) (2025-12-01)
 
 
