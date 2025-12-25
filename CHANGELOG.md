@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.12](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.11...v2.1.12) (2025-12-25)
+
+
+### Bug Fixes
+
+* remove heap allocation for arg storage ([7fd18fc](https://github.com/untrustedmodders/plugify-module-v8/commit/7fd18fc16217fff43b2064c71416f7bbede805cc))
+
 ## [2.1.11](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.10...v2.1.11) (2025-12-13)
 
 
