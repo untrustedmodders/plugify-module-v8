@@ -106,11 +106,6 @@ namespace v8lm {
 		std::optional<T> GetObjectAttrAsValue(v8::Local<v8::Object> object, std::string_view attrName);
 		bool IsSubclassOf(v8::Local<v8::Context> context, v8::Local<v8::Function> childClass, v8::Local<v8::Function> parentClass);
 
-		template<typename T>
-		void* CreateValue(v8::Local<v8::Value> value);
-		template<typename T>
-		void* CreateArray(v8::Local<v8::Value> value);
-
 		void SetFallbackReturn(ValueType retType, ReturnSlot& ret);
 		bool SetReturn(v8::Local<v8::Value> result, const Property& retType, ReturnSlot& ret);
 		bool SetRefParam(v8::Local<v8::Value> object, const Property& paramType, ParametersSpan& params, size_t index);
@@ -118,11 +113,56 @@ namespace v8lm {
 		v8::Local<v8::Value> ParamRefToObject(const Property& paramType, ParametersSpan& params, size_t index);
 
 		struct ArgsScope {
+			using variant = plg::variant<
+				plg::invalid,
+
+				plg::none,
+				bool,
+				char,
+				char16_t,
+				int8_t,
+				int16_t,
+				int32_t,
+				int64_t,
+				uint8_t,
+				uint16_t,
+				uint32_t,
+				uint64_t,
+				void*,
+				float,
+				double,
+				plg::function,
+				plg::string,
+				plg::any,
+				plg::vector<bool>,
+				plg::vector<char>,
+				plg::vector<char16_t>,
+				plg::vector<int8_t>,
+				plg::vector<int16_t>,
+				plg::vector<int32_t>,
+				plg::vector<int64_t>,
+				plg::vector<uint8_t>,
+				plg::vector<uint16_t>,
+				plg::vector<uint32_t>,
+				plg::vector<uint64_t>,
+				plg::vector<void*>,
+				plg::vector<float>,
+				plg::vector<double>,
+				plg::vector<plg::string>,
+				plg::vector<plg::any>,
+				plg::vector<plg::vec2>,
+				plg::vector<plg::vec3>,
+				plg::vector<plg::vec4>,
+				plg::vector<plg::mat4x4>,
+				plg::vec2,
+				plg::vec3,
+				plg::vec4,
+				plg::mat4x4
+			>;
 			Parameters params;
-			std::inplace_vector<std::pair<void*, ValueType>, Signature::kMaxFuncArgs> storage; // used to store array temp memory
+			std::inplace_vector<variant, Signature::kMaxFuncArgs + 1> storage;
 
 			explicit ArgsScope(size_t size);
-			~ArgsScope();
 		};
 		
 		void BeginExternalCall(ValueType retType, ArgsScope& a) const;
