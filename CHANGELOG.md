@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.13](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.12...v2.1.13) (2026-01-03)
+
+
+### Bug Fixes
+
+* add build type to configure step ([1f12f42](https://github.com/untrustedmodders/plugify-module-v8/commit/1f12f42b7e32c393a1e78f11405d20933f179ccc))
+
 ## [2.1.12](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.11...v2.1.12) (2025-12-25)
 
 
