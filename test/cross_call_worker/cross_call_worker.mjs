@@ -1,4 +1,6 @@
-import { Plugin, Vector2, Vector3, Vector4, Matrix4x4 } from 'plugify';
+// noinspection JSUnusedGlobalSymbols,JSUnusedLocalSymbols
+
+import {Matrix4x4, Plugin, Vector2, Vector3, Vector4} from 'plugify';
 import * as master from ':cross_call_master';
 
 const boolStr = (b) => {
@@ -295,6 +297,61 @@ export const paramAllPrimitives = (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11,
     return 56;
 };
 
+export const paramAllAliases = (
+    aBool, aChar8, aChar16, aInt8, aInt16, aInt32, aInt64, aPtr, aFloat, aDouble,
+    aString, aAny, aVec2, aVec3, aVec4, aMat4x4,
+    aBoolVec, aChar8Vec, aChar16Vec, aInt8Vec, aInt16Vec, aInt32Vec, aInt64Vec,
+    aPtrVec, aFloatVec, aDoubleVec, aStringVec, aAnyVec, aVec2Vec, aVec3Vec, aVec4Vec
+) => {
+    // Porting the std::format behavior
+    const buffer = `${aBool}|${aChar8}|${ordZero(aChar16)}|${aInt8}|${aInt16}|${aInt32}|${aInt64}|${aPtr}|${aFloat}|${aDouble}|${aString}|${aAny}|` +
+        `${podToString(aVec2)}|${podToString(aVec3)}|${podToString(aVec4)}|${podToString(aMat4x4)}|` +
+        `${vectorToString(aBoolVec)}|${vectorToString(aChar8Vec)}|${vectorToString(aChar16Vec, ordZero)}|` +
+        `${vectorToString(aInt8Vec)}|${vectorToString(aInt16Vec)}|${vectorToString(aInt32Vec)}|${vectorToString(aInt64Vec)}|` +
+        `${vectorToString(aPtrVec, ptrStr)}|${vectorToString(aFloatVec, floatStr)}|${vectorToString(aDoubleVec, floatStr)}|` +
+        `${vectorToString(aStringVec)}|${vectorToString(aAnyVec)}|` +
+        `${vectorToString(aVec2Vec, podToString)}|${vectorToString(aVec3Vec, podToString)}|${vectorToString(aVec4Vec, podToString)}`;
+
+    return -1;
+};
+
+export const paramAllRefAliases = (
+    aBool, aChar8, aChar16, aInt8, aInt16, aInt32, aInt64, aPtr, aFloat, aDouble,
+    aString, aAny, aVec2, aVec3, aVec4, aMat4x4,
+    aBoolVec, aChar8Vec, aChar16Vec, aInt8Vec, aInt16Vec, aInt32Vec, aInt64Vec,
+    aPtrVec, aFloatVec, aDoubleVec, aStringVec, aAnyVec, aVec2Vec, aVec3Vec, aVec4Vec
+) => {
+    // Assigning the values as defined in the C++ snippet
+    const newBool = true;
+    const newChar8 = 'A';
+    const newChar16 = '0';
+    const newInt8 = 1;
+    const newInt16 = 2;
+    const newInt32 = 3;
+    const newInt64 = 4n;
+    const newPtr = 0n;
+    const newFloat = 5.0;
+    const newDouble = 5.0;
+    const newString = "seven";
+    const newAny = "six";
+    const newVec2 = new Vector2(0.1, 0.2);
+    const newVec3 = new Vector3(0.3, 0.4, 0.5);
+    const newVec4 = new Vector4(0.6, 0.7, 0.8, 0.9);
+    const newMat4x4 = new Matrix4x4([
+        [1.4, 1.1, 1.2, 1.3], [2.4, 2.1, 2.2, 2.3],
+        [3.4, 3.1, 3.2, 3.3], [4.4, 4.1, 4.2, 4.3]
+    ]);
+
+    // Return the result (24) followed by all updated reference parameters
+    return [
+        24,
+        newBool, newChar8, newChar16, newInt8, newInt16, newInt32, newInt64, newPtr, newFloat, newDouble,
+        newString, newAny, newVec2, newVec3, newVec4, newMat4x4,
+        [newBool], [newChar8], [newChar16], [newInt8], [newInt16], [newInt32], [newInt64],
+        [newPtr], [newFloat], [newDouble], [newString], [newAny], [newVec2], [newVec3], [newVec4]
+    ];
+};
+
 export const paramEnum = (p1, p2) => {
     return p1 + p2.reduce((a, b) => a + b, 0);
 };
@@ -481,6 +538,78 @@ export const callFuncVec4 = (func) => {
 
 export const callFuncMat4x4 = (func) => {
     return func();
+};
+
+// Callback wrappers
+export const callFuncAliasBool = (func) => func();
+export const callFuncAliasChar8 = (func) => func();
+export const callFuncAliasChar16 = (func) => func();
+export const callFuncAliasInt8 = (func) => func();
+export const callFuncAliasInt16 = (func) => func();
+export const callFuncAliasInt32 = (func) => func();
+export const callFuncAliasInt64 = (func) => func();
+export const callFuncAliasUInt8 = (func) => func();
+export const callFuncAliasUInt16 = (func) => func();
+export const callFuncAliasUInt32 = (func) => func();
+export const callFuncAliasUInt64 = (func) => func();
+export const callFuncAliasPtr = (func) => func();
+export const callFuncAliasFloat = (func) => func();
+export const callFuncAliasDouble = (func) => func();
+export const callFuncAliasFunction = (func) => func();
+export const callFuncAliasString = (func) => func();
+export const callFuncAliasAny = (func) => func();
+export const callFuncAliasBoolVector = (func) => func();
+export const callFuncAliasChar8Vector = (func) => func();
+export const callFuncAliasChar16Vector = (func) => func();
+export const callFuncAliasInt8Vector = (func) => func();
+export const callFuncAliasInt16Vector = (func) => func();
+export const callFuncAliasInt32Vector = (func) => func();
+export const callFuncAliasInt64Vector = (func) => func();
+export const callFuncAliasUInt8Vector = (func) => func();
+export const callFuncAliasUInt16Vector = (func) => func();
+export const callFuncAliasUInt32Vector = (func) => func();
+export const callFuncAliasUInt64Vector = (func) => func();
+export const callFuncAliasPtrVector = (func) => func();
+export const callFuncAliasFloatVector = (func) => func();
+export const callFuncAliasDoubleVector = (func) => func();
+export const callFuncAliasStringVector = (func) => func();
+export const callFuncAliasAnyVector = (func) => func();
+export const callFuncAliasVec2Vector = (func) => func();
+export const callFuncAliasVec3Vector = (func) => func();
+export const callFuncAliasVec4Vector = (func) => func();
+export const callFuncAliasMat4x4Vector = (func) => func();
+export const callFuncAliasVec2 = (func) => func();
+export const callFuncAliasVec3 = (func) => func();
+export const callFuncAliasVec4 = (func) => func();
+export const callFuncAliasMat4x4 = (func) => func();
+
+export const callFuncAliasAll = (func) => {
+    const aBool = true;
+    const aChar8 = 'A';
+    const aChar16 = '0';
+    const aInt8 = 1;
+    const aInt16 = 2;
+    const aInt32 = 3;
+    const aInt64 = 4n;
+    const aPtr = 0n;
+    const aFloat = 5.5;
+    const aDouble = 6.6;
+    const aString = "seven";
+    const aAny = "six";
+    const aVec2 = new Vector2(0.1, 0.2);
+    const aVec3 = new Vector3(0.3, 0.4, 0.5);
+    const aVec4 = new Vector4(0.6, 0.7, 0.8, 0.9);
+    const aMat4x4 = new Matrix4x4([
+        [1.4, 1.1, 1.2, 1.3], [2.4, 2.1, 2.2, 2.3],
+        [3.4, 3.1, 3.2, 3.3], [4.4, 4.1, 4.2, 4.3]
+    ]);
+
+    return func(
+        aBool, aChar8, aChar16, aInt8, aInt16, aInt32, aInt64, aPtr, aFloat, aDouble,
+        aString, aAny, aVec2, aVec3, aVec4, aMat4x4,
+        [aBool], [aChar8], [aChar16], [aInt8], [aInt16], [aInt32], [aInt64],
+        [aPtr], [aFloat], [aDouble], [aString], [aAny], [aVec2], [aVec3], [aVec4]
+    );
 };
 
 // Assuming Vector2, Vector3, Vector4, and Matrix4x4 are classes that need to be imported or defined elsewhere in your project
@@ -1103,13 +1232,11 @@ export const reverseNoParamReturnFunction = () => {
 };
 
 export const reverseNoParamReturnString = () => {
-    const result = master.NoParamReturnStringCallback();
-    return result;
+    return master.NoParamReturnStringCallback();
 };
 
 export const reverseNoParamReturnAny = () => {
-    const result = master.NoParamReturnAnyCallback();
-    return result;
+    return master.NoParamReturnAnyCallback();
 };
 
 export const reverseNoParamReturnArrayBool = () => {
@@ -1340,6 +1467,66 @@ export const reverseParamAllPrimitives = () => {
     return `${result}`;
 };
 
+export const reverseParamAllAliases = () => {
+    const aBool = true;
+    const aChar8 = 'A';
+    const aChar16 = '0';
+    const aInt8 = 1;
+    const aInt16 = 2;
+    const aInt32 = 3;
+    const aInt64 = 4n;
+    const aPtr = 0n;
+    const aFloat = 5.5;
+    const aDouble = 6.6;
+    const aString = "seven";
+    const aAny = "six";
+    const aVec2 = new Vector2(0.1, 0.2);
+    const aVec3 = new Vector3(0.3, 0.4, 0.5);
+    const aVec4 = new Vector4(0.6, 0.7, 0.8, 0.9);
+    const aMat4x4 = new Matrix4x4([
+        [1.4, 1.1, 1.2, 1.3], [2.4, 2.1, 2.2, 2.3],
+        [3.4, 3.1, 3.2, 3.3], [4.4, 4.1, 4.2, 4.3]
+    ]);
+
+    const result = master.ParamAllAliasesCallback(
+        aBool, aChar8, aChar16, aInt8, aInt16, aInt32, aInt64, aPtr, aFloat, aDouble,
+        aString, aAny, aVec2, aVec3, aVec4, aMat4x4,
+        [aBool], [aChar8], [aChar16], [aInt8], [aInt16], [aInt32], [aInt64],
+        [aPtr], [aFloat], [aDouble], [aString], [aAny], [aVec2], [aVec3], [aVec4]
+    );
+
+   return `${result}`;
+};
+
+export const reverseParamAllRefAliases = () => {
+    // Initializing with "zero" values as in C++: {}
+    const aBool = false;
+    const aChar8 = '';
+    const aChar16 = '';
+    const aInt8 = 0;
+    const aInt16 = 0;
+    const aInt32 = 0;
+    const aInt64 = 0n;
+    const aPtr = 0n;
+    const aFloat = 0.0;
+    const aDouble = 0.0;
+    const aString = "";
+    const aAny = 0;
+    const aVec2 = new Vector2(0, 0);
+    const aVec3 = new Vector3(0, 0, 0);
+    const aVec4 = new Vector4(0, 0, 0, 0);
+    const aMat4x4 = new Matrix4x4();
+
+    const res = master.ParamAllRefAliasesCallback(
+        aBool, aChar8, aChar16, aInt8, aInt16, aInt32, aInt64, aPtr, aFloat, aDouble,
+        aString, aAny, aVec2, aVec3, aVec4, aMat4x4,
+        [aBool], [aChar8], [aChar16], [aInt8], [aInt16], [aInt32], [aInt64],
+        [aPtr], [aFloat], [aDouble], [aString], [aAny], [aVec2], [aVec3], [aVec4]
+    );
+
+    return `${res[0]}`;
+};
+
 export const reverseParamEnum = () => {
     const e = master.Example;
     const result = master.ParamEnumCallback(e.Forth, [e.First, e.Second, e.Third]);
@@ -1437,71 +1624,71 @@ export class CallbackHolder {
         return 'A';
     }
 
-    static mockBoolArray() {
+    static mockBoolVector() {
         return [true, false];
     }
 
-    static mockChar8Array() {
+    static mockChar8Vector() {
         return ['A', 'B'];
     }
 
-    static mockChar16Array() {
+    static mockChar16Vector() {
         return ['A', 'B'];
     }
 
-    static mockInt8Array() {
+    static mockInt8Vector() {
         return [10, 20];
     }
 
-    static mockInt16Array() {
+    static mockInt16Vector() {
         return [100, 200];
     }
 
-    static mockInt32Array() {
+    static mockInt32Vector() {
         return [1000, 2000];
     }
 
-    static mockInt64Array() {
+    static mockInt64Vector() {
         return [10000, 20000];
     }
 
-    static mockUInt8Array() {
+    static mockUInt8Vector() {
         return [20, 30];
     }
 
-    static mockUInt16Array() {
+    static mockUInt16Vector() {
         return [200, 300];
     }
 
-    static mockUInt32Array() {
+    static mockUInt32Vector() {
         return [2000, 3000];
     }
 
-    static mockUInt64Array() {
+    static mockUInt64Vector() {
         return [20000, 30000];
     }
 
-    static mockPtrArray() {
+    static mockPtrVector() {
         return [0, 1];
     }
 
-    static mockFloatArray() {
+    static mockFloatVector() {
         return [1.1, 2.2];
     }
 
-    static mockDoubleArray() {
+    static mockDoubleVector() {
         return [3.3, 4.4];
     }
 
-    static mockStringArray() {
+    static mockStringVector() {
         return ['Hello', 'World'];
     }
 
-    static mockAnyArray() {
+    static mockAnyVector() {
         return ['Hello', 3.14, 6.28, 1, 0xdeadbeaf];
     }
 
-    static mockVec2Array() {
+    static mockVec2Vector() {
         return [
             new Vector2(0.5, -1.2),
             new Vector2(3.4, 7.8),
@@ -1511,7 +1698,7 @@ export class CallbackHolder {
         ];
     }
 
-    static mockVec3Array() {
+    static mockVec3Vector() {
         return [
             new Vector3(2.1, 3.2, 4.3),
             new Vector3(-5.4, 6.5, -7.6),
@@ -1521,7 +1708,7 @@ export class CallbackHolder {
         ];
     }
 
-    static mockVec4Array() {
+    static mockVec4Vector() {
         return [
             new Vector4(0.1, 1.2, 2.3, 3.4),
             new Vector4(-4.5, 5.6, 6.7, -7.8),
@@ -1531,7 +1718,7 @@ export class CallbackHolder {
         ];
     }
 
-    static mockMat4x4Array() {
+    static mockMat4x4Vector() {
         return [
             // Identity matrix
             new Matrix4x4(),
@@ -1576,6 +1763,118 @@ export class CallbackHolder {
         mat.m[0][0] = 1.0;
         return mat;
     }
+
+    // Primitives
+    static mockAliasBool = () => true;
+    static mockAliasChar8 = () => 'A';
+    static mockAliasChar16 = () => 'Z';
+    static mockAliasInt8 = () => 10;
+    static mockAliasInt16 = () => 100;
+    static mockAliasInt32 = () => 1000;
+    static mockAliasInt64 = () => 10000n;
+    static mockAliasUInt8 = () => 20;
+    static mockAliasUInt16 = () => 200;
+    static mockAliasUInt32 = () => 2000;
+    static mockAliasUInt64 = () => 20000n;
+    static mockAliasPtr = () => 0n;
+    static mockAliasFloat = () => 3.14;
+    static mockAliasDouble = () => 6.28;
+    static mockAliasFunction = () => null;
+    static mockAliasString = () => "Test string";
+    static mockAliasAny = () => 'A';
+
+    // Vectors (Arrays)
+    static mockAliasBoolVector = () => [true, false];
+    static mockAliasChar8Vector = () => ['A', 'B'];
+    static mockAliasChar16Vector = () => ['A', 'B'];
+    static mockAliasInt8Vector = () => [10, 20];
+    static mockAliasInt16Vector = () => [100, 200];
+    static mockAliasInt32Vector = () => [1000, 2000];
+    static mockAliasInt64Vector = () => [10000n, 20000n];
+    static mockAliasUInt8Vector = () => [20, 30];
+    static mockAliasUInt16Vector = () => [200, 300];
+    static mockAliasUInt32Vector = () => [2000, 3000];
+    static mockAliasUInt64Vector = () => [20000n, 30000n];
+    static mockAliasPtrVector = () => [0n, 1n];
+    static mockAliasFloatVector = () => [1.1, 2.2];
+    static mockAliasDoubleVector = () => [3.3, 4.4];
+    static mockAliasStringVector = () => ["Hello", "World"];
+    static mockAliasAnyVector = () => ["Hello", 3.14, 6.28, 1, 3735928495n]; // 0xDEADBEAF
+
+    // POD Vectors
+    static mockAliasVec2Vector = () => [
+        new Vector2(0.5, -1.2),
+        new Vector2(3.4, 7.8),
+        new Vector2(-6.7, 2.3),
+        new Vector2(8.9, -4.5),
+        new Vector2(0.0, 0.0)
+    ];
+
+    static mockAliasVec3Vector = () => [
+        new Vector3(2.1, 3.2, 4.3),
+        new Vector3(-5.4, 6.5, -7.6),
+        new Vector3(8.7, 9.8, 0.1),
+        new Vector3(1.2, -3.3, 4.4),
+        new Vector3(-5.5, 6.6, -7.7)
+    ];
+
+    static mockAliasVec4Vector = () => [
+        new Vector4(0.1, 1.2, 2.3, 3.4),
+        new Vector4(-4.5, 5.6, 6.7, -7.8),
+        new Vector4(8.9, -9.0, 10.1, -11.2),
+        new Vector4(12.3, 13.4, 14.5, 15.6),
+        new Vector4(-16.7, 17.8, 18.9, -19.0)
+    ];
+
+    static mockAliasMat4x4Vector = () => [
+        // Identity matrix
+        new Matrix4x4([
+            [1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]
+        ]),
+        // Random matrix #1
+        new Matrix4x4([
+            [0.5, 1.0, 1.5, 2.0], [2.5, 3.0, 3.5, 4.0],
+            [4.5, 5.0, 5.5, 6.0], [6.5, 7.0, 7.5, 8.0]
+        ]),
+        // Random matrix #2
+        new Matrix4x4([
+            [-1.0, -2.0, -3.0, -4.0], [-5.0, -6.0, -7.0, -8.0],
+            [-9.0, -10.0, -11.0, -12.0], [-13.0, -14.0, -15.0, -16.0]
+        ]),
+        // Random matrix #3
+        new Matrix4x4([
+            [1.1, 2.2, 3.3, 4.4], [5.5, 6.6, 7.7, 8.8],
+            [9.9, 10.0, 11.1, 12.2], [13.3, 14.4, 15.5, 16.6]
+        ])
+    ];
+
+    // Single PODs
+    static mockAliasVec2 = () => new Vector2(1.0, 2.0);
+    static mockAliasVec3 = () => new Vector3(1.0, 2.0, 3.0);
+    static mockAliasVec4 = () => new Vector4(1.0, 2.0, 3.0, 4.0);
+    static mockAliasMat4x4 = () => new Matrix4x4([
+        [1.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]
+    ]);
+
+    // Combined Formatter
+    static mockAliasAll = (
+        aBool, aChar8, aChar16, aInt8, aInt16, aInt32, aInt64, aPtr, aFloat, aDouble,
+        aString, aAny, aVec2, aVec3, aVec4, aMat4x4,
+        aBoolVec, aChar8Vec, aChar16Vec, aInt8Vec, aInt16Vec, aInt32Vec, aInt64Vec,
+        aPtrVec, aFloatVec, aDoubleVec, aStringVec, aAnyVec, aVec2Vec, aVec3Vec, aVec4Vec, aMat4x4Vec
+    ) => {
+        return `${boolStr(aBool)}|${aChar8}|${ordZero(aChar16)}|${aInt8}|${aInt16}|${aInt32}|${aInt64}|${ptrStr(aPtr)}|` +
+            `${floatStr(aFloat)}|${floatStr(aDouble)}|${aString}|${aAny}|` +
+            `${podToString(aVec2)}|${podToString(aVec3)}|${podToString(aVec4)}|${podToString(aMat4x4)}|` +
+            `${vectorToString(aBoolVec, boolStr)}|${vectorToString(aChar8Vec)}|${vectorToString(aChar16Vec, ordZero)}|` +
+            `${vectorToString(aInt8Vec)}|${vectorToString(aInt16Vec)}|${vectorToString(aInt32Vec)}|${vectorToString(aInt64Vec)}|` +
+            `${vectorToString(aPtrVec, ptrStr)}|${vectorToString(aFloatVec, floatStr)}|${vectorToString(aDoubleVec, floatStr)}|` +
+            `${vectorToString(aStringVec)}|${vectorToString(aAnyVec)}|` +
+            `${vectorToString(aVec2Vec, podToString)}|${vectorToString(aVec3Vec, podToString)}|${vectorToString(aVec4Vec, podToString)}|` +
+            `${vectorToString(aMat4x4Vec, podToString)}`;
+    };
 
     static mockFunc1(vec3) {
         return Math.floor(vec3.x + vec3.y + vec3.z);
@@ -1905,7 +2204,7 @@ export const reverseCallFuncBool = () => {
 
 export const reverseCallFuncChar8 = () => {
     const result = master.CallFuncChar8Callback(CallbackHolder.mockChar8);
-    return `${ordZero(result)}`;
+    return `${result}`;
 };
 
 export const reverseCallFuncChar16 = () => {
@@ -1969,112 +2268,111 @@ export const reverseCallFuncDouble = () => {
 };
 
 export const reverseCallFuncString = () => {
-    const result = master.CallFuncStringCallback(CallbackHolder.mockString);
-    return result;
+    return master.CallFuncStringCallback(CallbackHolder.mockString);
 };
 
 export const reverseCallFuncAny = () => {
     const result = master.CallFuncAnyCallback(CallbackHolder.mockAny);
-    return result;
+    return result
 };
 
 export const reverseCallFuncBoolVector = () => {
-    const result = master.CallFuncBoolVectorCallback(CallbackHolder.mockBoolArray);
+    const result = master.CallFuncBoolVectorCallback(CallbackHolder.mockBoolVector);
     return vectorToString(result, boolStr);
 };
 
 export const reverseCallFuncChar8Vector = () => {
-    const result = master.CallFuncChar8VectorCallback(CallbackHolder.mockChar8Array);
+    const result = master.CallFuncChar8VectorCallback(CallbackHolder.mockChar8Vector);
     return vectorToString(result, char8Str);
 };
 
 export const reverseCallFuncChar16Vector = () => {
-    const result = master.CallFuncChar16VectorCallback(CallbackHolder.mockChar16Array);
+    const result = master.CallFuncChar16VectorCallback(CallbackHolder.mockChar16Vector);
     return vectorToString(result, char16Str);
 };
 
 export const reverseCallFuncInt8Vector = () => {
-    const result = master.CallFuncInt8VectorCallback(CallbackHolder.mockInt8Array);
+    const result = master.CallFuncInt8VectorCallback(CallbackHolder.mockInt8Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncInt16Vector = () => {
-    const result = master.CallFuncInt16VectorCallback(CallbackHolder.mockInt16Array);
+    const result = master.CallFuncInt16VectorCallback(CallbackHolder.mockInt16Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncInt32Vector = () => {
-    const result = master.CallFuncInt32VectorCallback(CallbackHolder.mockInt32Array);
+    const result = master.CallFuncInt32VectorCallback(CallbackHolder.mockInt32Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncInt64Vector = () => {
-    const result = master.CallFuncInt64VectorCallback(CallbackHolder.mockInt64Array);
+    const result = master.CallFuncInt64VectorCallback(CallbackHolder.mockInt64Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncUInt8Vector = () => {
-    const result = master.CallFuncUInt8VectorCallback(CallbackHolder.mockUInt8Array);
+    const result = master.CallFuncUInt8VectorCallback(CallbackHolder.mockUInt8Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncUInt16Vector = () => {
-    const result = master.CallFuncUInt16VectorCallback(CallbackHolder.mockUInt16Array);
+    const result = master.CallFuncUInt16VectorCallback(CallbackHolder.mockUInt16Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncUInt32Vector = () => {
-    const result = master.CallFuncUInt32VectorCallback(CallbackHolder.mockUInt32Array);
+    const result = master.CallFuncUInt32VectorCallback(CallbackHolder.mockUInt32Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncUInt64Vector = () => {
-    const result = master.CallFuncUInt64VectorCallback(CallbackHolder.mockUInt64Array);
+    const result = master.CallFuncUInt64VectorCallback(CallbackHolder.mockUInt64Vector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncPtrVector = () => {
-    const result = master.CallFuncPtrVectorCallback(CallbackHolder.mockPtrArray);
+    const result = master.CallFuncPtrVectorCallback(CallbackHolder.mockPtrVector);
     return vectorToString(result, ptrStr);
 };
 
 export const reverseCallFuncFloatVector = () => {
-    const result = master.CallFuncFloatVectorCallback(CallbackHolder.mockFloatArray);
+    const result = master.CallFuncFloatVectorCallback(CallbackHolder.mockFloatVector);
     return vectorToString(result, floatStr);
 };
 
 export const reverseCallFuncDoubleVector = () => {
-    const result = master.CallFuncDoubleVectorCallback(CallbackHolder.mockDoubleArray);
+    const result = master.CallFuncDoubleVectorCallback(CallbackHolder.mockDoubleVector);
     return vectorToString(result);
 };
 
 export const reverseCallFuncStringVector = () => {
-    const result = master.CallFuncStringVectorCallback(CallbackHolder.mockStringArray);
+    const result = master.CallFuncStringVectorCallback(CallbackHolder.mockStringVector);
     return vectorToString(result, quoteStr);
 };
 
 export const reverseCallFuncAnyVector = () => {
-    const result = master.CallFuncAnyVectorCallback(CallbackHolder.mockAnyArray);
+    const result = master.CallFuncAnyVectorCallback(CallbackHolder.mockAnyVector);
     return vectorToString(result, plainStr);
 };
 
 export const reverseCallFuncVec2Vector = () => {
-    const result = master.CallFuncVec2VectorCallback(CallbackHolder.mockVec2Array);
+    const result = master.CallFuncVec2VectorCallback(CallbackHolder.mockVec2Vector);
     return vectorToString(result, podToString);
 };
 
 export const reverseCallFuncVec3Vector = () => {
-    const result = master.CallFuncVec3VectorCallback(CallbackHolder.mockVec3Array);
+    const result = master.CallFuncVec3VectorCallback(CallbackHolder.mockVec3Vector);
     return vectorToString(result, podToString);
 };
 
 export const reverseCallFuncVec4Vector = () => {
-    const result = master.CallFuncVec4VectorCallback(CallbackHolder.mockVec4Array);
+    const result = master.CallFuncVec4VectorCallback(CallbackHolder.mockVec4Vector);
     return vectorToString(result, podToString);
 };
 
 export const reverseCallFuncMat4x4Vector = () => {
-    const result = master.CallFuncMat4x4VectorCallback(CallbackHolder.mockMat4x4Array);
+    const result = master.CallFuncMat4x4VectorCallback(CallbackHolder.mockMat4x4Vector);
     return vectorToString(result, podToString);
 };
 
@@ -2095,6 +2393,209 @@ export const reverseCallFuncVec4 = () => {
 
 export const reverseCallFuncMat4x4 = () => {
     const result = master.CallFuncMat4x4Callback(CallbackHolder.mockMat4x4);
+    return podToString(result);
+};
+
+export const reverseCallFuncAliasBool = () => {
+    const result = master.CallFuncAliasBoolCallback(CallbackHolder.mockAliasBool);
+    return boolStr(result);
+};
+
+export const reverseCallFuncAliasChar8 = () => {
+    const result = master.CallFuncAliasChar8Callback(CallbackHolder.mockAliasChar8);
+    return `${ordZero(result)}`;
+};
+
+export const reverseCallFuncAliasChar16 = () => {
+    const result = master.CallFuncAliasChar16Callback(CallbackHolder.mockAliasChar16);
+    return `${ordZero(result)}`;
+};
+
+export const reverseCallFuncAliasInt8 = () => {
+    const result = master.CallFuncAliasInt8Callback(CallbackHolder.mockAliasInt8);
+    return String(result);
+};
+
+export const reverseCallFuncAliasInt16 = () => {
+    const result = master.CallFuncAliasInt16Callback(CallbackHolder.mockAliasInt16);
+    return String(result);
+};
+
+export const reverseCallFuncAliasInt32 = () => {
+    const result = master.CallFuncAliasInt32Callback(CallbackHolder.mockAliasInt32);
+    return String(result);
+};
+
+export const reverseCallFuncAliasInt64 = () => {
+    const result = master.CallFuncAliasInt64Callback(CallbackHolder.mockAliasInt64);
+    return String(result);
+};
+
+export const reverseCallFuncAliasUint8 = () => {
+    const result = master.CallFuncAliasUInt8Callback(CallbackHolder.mockAliasUint8);
+    return String(result);
+};
+
+export const reverseCallFuncAliasUint16 = () => {
+    const result = master.CallFuncAliasUInt16Callback(CallbackHolder.mockAliasUint16);
+    return String(result);
+};
+
+export const reverseCallFuncAliasUint32 = () => {
+    const result = master.CallFuncAliasUInt32Callback(CallbackHolder.mockAliasUint32);
+    return String(result);
+};
+
+export const reverseCallFuncAliasUint64 = () => {
+    const result = master.CallFuncAliasUInt64Callback(CallbackHolder.mockAliasUint64);
+    return String(result);
+};
+
+export const reverseCallFuncAliasPtr = () => {
+    const result = master.CallFuncAliasPtrCallback(CallbackHolder.mockAliasPtr);
+    return ptrStr(result);
+};
+
+export const reverseCallFuncAliasFloat = () => {
+    const result = master.CallFuncAliasFloatCallback(CallbackHolder.mockAliasFloat);
+    return floatStr(result);
+};
+
+export const reverseCallFuncAliasDouble = () => {
+    const result = master.CallFuncAliasDoubleCallback(CallbackHolder.mockAliasDouble);
+    return String(result);
+};
+
+export const reverseCallFuncAliasString = () => {
+    return master.CallFuncAliasStringCallback(CallbackHolder.mockAliasString);
+};
+
+export const reverseCallFuncAliasAny = () => {
+    return master.CallFuncAliasAnyCallback(CallbackHolder.mockAliasAny);
+};
+
+export const reverseCallFuncAliasBoolVector = () => {
+    const result = master.CallFuncAliasBoolVectorCallback(CallbackHolder.mockAliasBoolVector);
+    return vectorToString(result, boolStr);
+};
+
+export const reverseCallFuncAliasChar8Vector = () => {
+    const result = master.CallFuncAliasChar8VectorCallback(CallbackHolder.mockAliasChar8Vector);
+    return vectorToString(result, char8Str);
+};
+
+export const reverseCallFuncAliasChar16Vector = () => {
+    const result = master.CallFuncAliasChar16VectorCallback(CallbackHolder.mockAliasChar16Vector);
+    return vectorToString(result, char16Str);
+};
+
+export const reverseCallFuncAliasInt8Vector = () => {
+    const result = master.CallFuncAliasInt8VectorCallback(CallbackHolder.mockAliasInt8Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasInt16Vector = () => {
+    const result = master.CallFuncAliasInt16VectorCallback(CallbackHolder.mockAliasInt16Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasInt32Vector = () => {
+    const result = master.CallFuncAliasInt32VectorCallback(CallbackHolder.mockAliasInt32Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasInt64Vector = () => {
+    const result = master.CallFuncAliasInt64VectorCallback(CallbackHolder.mockAliasInt64Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasUInt8Vector = () => {
+    const result = master.CallFuncAliasUInt8VectorCallback(CallbackHolder.mockAliasUInt8Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasUInt16Vector = () => {
+    const result = master.CallFuncAliasUInt16VectorCallback(CallbackHolder.mockAliasUInt16Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasUInt32Vector = () => {
+    const result = master.CallFuncAliasUInt32VectorCallback(CallbackHolder.mockAliasUInt32Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasUInt64Vector = () => {
+    const result = master.CallFuncAliasUInt64VectorCallback(CallbackHolder.mockAliasUInt64Vector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasPtrVector = () => {
+    const result = master.CallFuncAliasPtrVectorCallback(CallbackHolder.mockAliasPtrVector);
+    return vectorToString(result, ptrStr);
+};
+
+export const reverseCallFuncAliasFloatVector = () => {
+    const result = master.CallFuncAliasFloatVectorCallback(CallbackHolder.mockAliasFloatVector);
+    return vectorToString(result, floatStr);
+};
+
+export const reverseCallFuncAliasDoubleVector = () => {
+    const result = master.CallFuncAliasDoubleVectorCallback(CallbackHolder.mockAliasDoubleVector);
+    return vectorToString(result);
+};
+
+export const reverseCallFuncAliasStringVector = () => {
+    const result = master.CallFuncAliasStringVectorCallback(CallbackHolder.mockAliasStringVector);
+    return vectorToString(result, quoteStr);
+};
+
+export const reverseCallFuncAliasAnyVector = () => {
+    const result = master.CallFuncAliasAnyVectorCallback(CallbackHolder.mockAliasAnyVector);
+    return vectorToString(result, plainStr);
+};
+
+export const reverseCallFuncAliasVec2Vector = () => {
+    const result = master.CallFuncAliasVec2VectorCallback(CallbackHolder.mockAliasVec2Vector);
+    return vectorToString(result, podToString);
+};
+
+export const reverseCallFuncAliasVec3Vector = () => {
+    const result = master.CallFuncAliasVec3VectorCallback(CallbackHolder.mockAliasVec3Vector);
+    return vectorToString(result, podToString);
+};
+
+export const reverseCallFuncAliasVec4Vector = () => {
+    const result = master.CallFuncAliasVec4VectorCallback(CallbackHolder.mockAliasVec4Vector);
+    return vectorToString(result, podToString);
+};
+
+export const reverseCallFuncAliasMat4x4Vector = () => {
+    const result = master.CallFuncAliasMat4x4VectorCallback(CallbackHolder.mockAliasMat4x4Vector);
+    return vectorToString(result, podToString);
+};
+
+export const reverseCallFuncAliasVec2 = () => {
+    const result = master.CallFuncAliasVec2Callback(CallbackHolder.mockAliasVec2);
+    return podToString(result);
+};
+
+export const reverseCallFuncAliasVec3 = () => {
+    const result = master.CallFuncAliasVec3Callback(CallbackHolder.mockAliasVec3);
+    return podToString(result);
+};
+
+export const reverseCallFuncAliasVec4 = () => {
+    const result = master.CallFuncAliasVec4Callback(CallbackHolder.mockAliasVec4);
+    return podToString(result);
+};
+
+export const reverseCallFuncAliasMat4x4 = () => {
+    const result = master.CallFuncAliasMat4x4Callback(CallbackHolder.mockAliasMat4x4);
+    return podToString(result);
+};
+
+export const reverseCallFuncAliasAll = () => {
+    const result = master.CallFuncAliasAllCallback(CallbackHolder.mockAliasAll);
     return podToString(result);
 };
 
@@ -2584,6 +3085,8 @@ const reverseTest = {
 	'ParamRef10': reverseParamRef10,
 	'ParamRefArrays': reverseParamRefVectors,
 	'ParamAllPrimitives': reverseParamAllPrimitives,
+	'ParamAllAliases': reverseParamAllAliases,
+	'ParamAllRefAliases': reverseParamAllRefAliases,
 	'ParamEnum': reverseParamEnum,
 	'ParamEnumRef': reverseParamEnumRef,
 	'ParamVariant': reverseParamVariant,
@@ -2629,6 +3132,47 @@ const reverseTest = {
 	'CallFuncVec3': reverseCallFuncVec3,
 	'CallFuncVec4': reverseCallFuncVec4,
 	'CallFuncMat4x4': reverseCallFuncMat4x4,
+    'CallFuncAliasBool': reverseCallFuncAliasBool,
+    'CallFuncAliasChar8': reverseCallFuncAliasChar8,
+    'CallFuncAliasChar16': reverseCallFuncAliasChar16,
+    'CallFuncAliasInt8': reverseCallFuncAliasInt8,
+    'CallFuncAliasInt16': reverseCallFuncAliasInt16,
+    'CallFuncAliasInt32': reverseCallFuncAliasInt32,
+    'CallFuncAliasInt64': reverseCallFuncAliasInt64,
+    'CallFuncAliasUInt8': reverseCallFuncAliasUint8,
+    'CallFuncAliasUInt16': reverseCallFuncAliasUint16,
+    'CallFuncAliasUInt32': reverseCallFuncAliasUint32,
+    'CallFuncAliasUInt64': reverseCallFuncAliasUint64,
+    'CallFuncAliasPtr': reverseCallFuncAliasPtr,
+    'CallFuncAliasFloat': reverseCallFuncAliasFloat,
+    'CallFuncAliasDouble': reverseCallFuncAliasDouble,
+    'CallFuncAliasString': reverseCallFuncAliasString,
+    'CallFuncAliasAny': reverseCallFuncAliasAny,
+    'CallFuncAliasBoolVector': reverseCallFuncAliasBoolVector,
+    'CallFuncAliasChar8Vector': reverseCallFuncAliasChar8Vector,
+    'CallFuncAliasChar16Vector': reverseCallFuncAliasChar16Vector,
+    'CallFuncAliasInt8Vector': reverseCallFuncAliasInt8Vector,
+    'CallFuncAliasInt16Vector': reverseCallFuncAliasInt16Vector,
+    'CallFuncAliasInt32Vector': reverseCallFuncAliasInt32Vector,
+    'CallFuncAliasInt64Vector': reverseCallFuncAliasInt64Vector,
+    'CallFuncAliasUInt8Vector': reverseCallFuncAliasUInt8Vector,
+    'CallFuncAliasUInt16Vector': reverseCallFuncAliasUInt16Vector,
+    'CallFuncAliasUInt32Vector': reverseCallFuncAliasUInt32Vector,
+    'CallFuncAliasUInt64Vector': reverseCallFuncAliasUInt64Vector,
+    'CallFuncAliasPtrVector': reverseCallFuncAliasPtrVector,
+    'CallFuncAliasFloatVector': reverseCallFuncAliasFloatVector,
+    'CallFuncAliasDoubleVector': reverseCallFuncAliasDoubleVector,
+    'CallFuncAliasStringVector': reverseCallFuncAliasStringVector,
+    'CallFuncAliasAnyVector': reverseCallFuncAliasAnyVector,
+    'CallFuncAliasVec2Vector': reverseCallFuncAliasVec2Vector,
+    'CallFuncAliasVec3Vector': reverseCallFuncAliasVec3Vector,
+    'CallFuncAliasVec4Vector': reverseCallFuncAliasVec4Vector,
+    'CallFuncAliasMat4x4Vector': reverseCallFuncAliasMat4x4Vector,
+    'CallFuncAliasVec2': reverseCallFuncAliasVec2,
+    'CallFuncAliasVec3': reverseCallFuncAliasVec3,
+    'CallFuncAliasVec4': reverseCallFuncAliasVec4,
+    'CallFuncAliasMat4x4': reverseCallFuncAliasMat4x4,
+    'CallFuncAliasAll': reverseCallFuncAliasAll,
 	'CallFunc1': reverseCallFunc1,
 	'CallFunc2': reverseCallFunc2,
 	'CallFunc3': reverseCallFunc3,
@@ -2679,4 +3223,4 @@ export function reverseCall(test) {
     if (result !== undefined) {
         master.ReverseReturn(result);
     }
-};
+}
