@@ -6,6 +6,7 @@
 #include <plugify/call.hpp>
 #include <plugify/callback.hpp>
 #include <plugify/language_module.hpp>
+#include <plugify/assembly_loader.hpp>
 #include <plugify/logger.hpp>
 #include <plugify/method.hpp>
 #include <plugify/extension.hpp>
@@ -229,7 +230,7 @@ namespace v8lm {
 		std::wstring ToWString(v8::Local<v8::Value> value) const;
 		std::wstring ToWStringOr(v8::Local<v8::Value> value, std::wstring_view or_string) const;
 		fs::path ToPath(v8::Local<v8::Value> value) const;
-		fs::path ToPathOr(v8::Local<v8::Value> value, fs::path or_path) const;
+		fs::path ToPathOr(v8::Local<v8::Value> value, const fs::path& or_path) const;
 
 		void InternalCall(const Method& method, MemAddr data, uint64_t* params, size_t count, void* ret);
 		void ExternalCall(const Method& method, MemAddr data, uint64_t* parameters, size_t count, void* ret);

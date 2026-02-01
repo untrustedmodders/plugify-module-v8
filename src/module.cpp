@@ -32,6 +32,7 @@ using namespace std::chrono_literals;
 #ifndef NOMINMAX
 #define NOMINMAX 1
 #endif
+#endif
 #include <windows.h>
 #include <winhttp.h>
 #else
@@ -43,6 +44,7 @@ namespace v8lm {
 #include "builtin/console.hpp"
 #include "builtin/crypto.hpp"
 #include "builtin/datagram.hpp"
+#include "builtin/dls.hpp"
 #include "builtin/dns.hpp"
 #include "builtin/fetch.hpp"
 #include "builtin/fs.hpp"
@@ -3213,6 +3215,7 @@ namespace v8lm {
 			platform.reset();
 		}
 
+		builtin::dls::Terminate();
 		builtin::fetch::Terminate();
 	}
 
@@ -4680,7 +4683,7 @@ namespace v8lm {
 		return {};
 	}
 
-	fs::path V8LanguageModule::ToPathOr(v8::Local<v8::Value> value, fs::path or_path) const {
+	fs::path V8LanguageModule::ToPathOr(v8::Local<v8::Value> value, const fs::path& or_path) const {
 		if (value.IsEmpty()) {
 			return or_path;
 		} else {

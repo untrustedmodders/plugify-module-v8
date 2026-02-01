@@ -175,6 +175,10 @@ export class ExamplePlugin extends Plugin {
   - TODO
 - [`dgram`](src/builtin/dgram.rs) Provides implementation of UDP datagram sockets
   - TODO
+- [`dls`](src/builtin/dls.cpp) Dynamic library loading and FFI (Foreign Function Interface)
+  - `dls.open()` Loads a dynamic library from the specified path. Returns a handle to the loaded library.
+  - `dls.close()` Unloads a previously loaded dynamic library using its handle.
+  - `dls.symbol()` Retrieves a symbol (function or variable) address from a loaded library by name.
 - [`dns`](src/builtin/dns.rs) To do DNS lookups and name resolution functions
   - TODO
 - [`events`](src/builtin/events.rs) To handle events
