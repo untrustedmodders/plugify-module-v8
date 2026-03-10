@@ -67,6 +67,8 @@ namespace v8lm {
 
 		static V8LanguageModule* Get(v8::Isolate* isolate) { return static_cast<V8LanguageModule*>(isolate->GetData(v8::Isolate::GetNumberOfDataSlots() - 1)); }
 		const std::unique_ptr<Provider>& GetProvider() const { return _provider; }
+		const std::shared_ptr<ILogger>& GetLogger() const { return _logger; }
+		const std::shared_ptr<IAssemblyLoader>& GetLoader() const { return _loader; }
 
 	private:
 		Result<JsMethodData> GenerateMethodExport(const Method& method, v8::Local<v8::Context> context, v8::Local<v8::Object> exports);
@@ -245,6 +247,8 @@ namespace v8lm {
 
 	private:
 		std::unique_ptr<Provider> _provider;
+		std::shared_ptr<ILogger> _logger;
+		std::shared_ptr<IAssemblyLoader> _loader;
 		std::unique_ptr<v8::ArrayBuffer::Allocator> _allocator;
 		v8::Isolate* _isolate;
 		v8::Global<v8::Context> _context;

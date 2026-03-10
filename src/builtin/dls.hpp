@@ -14,9 +14,7 @@ namespace builtin {
             try {
                 std::filesystem::path path = g_v8lm.ToPath(args[0]);
 
-                auto assemblyResult = g_v8lm.GetProvider()
-                    ->Resolve<IAssemblyLoader>()
-                    ->Load(path, LoadFlag::Default);
+                auto assemblyResult = g_v8lm.GetLoader()->Load(path, LoadFlag::Default);
 
                 if (!assemblyResult) {
                     g_v8lm.ThrowException(assemblyResult.error());

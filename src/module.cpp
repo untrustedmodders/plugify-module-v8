@@ -1453,7 +1453,7 @@ namespace v8lm {
 				ret.Set<plg::mat4x4>({});
 				break;
 			default: {
-				_provider->Log(std::format(LOG_PREFIX "SetFallbackReturn unsupported type {:#x}", static_cast<uint8_t>(retType)), Severity::Fatal);
+				_logger->Log(std::format(LOG_PREFIX "SetFallbackReturn unsupported type {:#x}", static_cast<uint8_t>(retType)), Severity::Fatal);
 				std::terminate();
 				break;
 			}
@@ -1711,7 +1711,7 @@ namespace v8lm {
 				}
 				break;
 			default: {
-				_provider->Log(std::format(LOG_PREFIX "SetReturn unsupported type {:#x}", static_cast<uint8_t>(retType.GetType())), Severity::Fatal);
+				_logger->Log(std::format(LOG_PREFIX "SetReturn unsupported type {:#x}", static_cast<uint8_t>(retType.GetType())), Severity::Fatal);
 				std::terminate();
 				break;
 			}
@@ -2003,7 +2003,7 @@ namespace v8lm {
 				}
 				break;
 			default: {
-				_provider->Log(std::format(LOG_PREFIX "SetRefParam unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
+				_logger->Log(std::format(LOG_PREFIX "SetRefParam unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
 				std::terminate();
 			}
 		}
@@ -2096,7 +2096,7 @@ namespace v8lm {
 			case ValueType::Matrix4x4:
 				return CreateJsObject(*(params.Get<plg::mat4x4*>(index)));
 			default: {
-				_provider->Log(std::format(LOG_PREFIX "ParamToObject unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
+				_logger->Log(std::format(LOG_PREFIX "ParamToObject unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
 				std::terminate();
 			}
 		}
@@ -2185,7 +2185,7 @@ namespace v8lm {
 			case ValueType::Matrix4x4:
 				return CreateJsObject(*(params.Get<plg::mat4x4*>(index)));
 			default: {
-				_provider->Log(std::format(LOG_PREFIX "ParamRefToObject unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
+				_logger->Log(std::format(LOG_PREFIX "ParamRefToObject unsupported type {:#x}", static_cast<uint8_t>(paramType.GetType())), Severity::Fatal);
 				std::terminate();
 			}
 		}
@@ -2458,7 +2458,7 @@ namespace v8lm {
 				break;
 			}
 			default:
-				_provider->Log(std::format(LOG_PREFIX "BeginExternalCall unsupported type {:#x}", static_cast<uint8_t>(retType)), Severity::Fatal);
+				_logger->Log(std::format(LOG_PREFIX "BeginExternalCall unsupported type {:#x}", static_cast<uint8_t>(retType)), Severity::Fatal);
 				std::terminate();
 				break;
 		}
@@ -2958,6 +2958,25 @@ namespace v8lm {
 		v8::Isolate* isolate = args.GetIsolate();
 		v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
+		if (const auto& logger = g_v8lm.GetLogger()/*; logger && logger->GetLogLevel() <= Severity::Debug*/) {
+			if (v8::Local<v8::StackTrace> stack = v8::StackTrace::CurrentStackTrace(isolate, 1); stack->GetFrameCount() > 0) {
+				v8::Local<v8::StackFrame> frame = stack->GetFrame(isolate, 0);
+
+				v8::String::Utf8Value file(isolate, frame->GetScriptName());
+				v8::String::Utf8Value function(isolate, frame->GetFunctionName());
+				v8::String::Utf8Value module(isolate, frame->GetScriptSource());
+
+				logger->Log(method.GetName(), Severity::Trace,
+					Location(
+						static_cast<size_t>(frame->GetLineNumber()),
+						static_cast<size_t>(frame->GetColumn()),
+						std::string_view(*file, static_cast<size_t>(file.length())),
+						std::string_view(*function, static_cast<size_t>(function.length())),
+						std::string_view(*module, static_cast<size_t>(module.length())))
+					);
+			}
+		}
+
 		const auto retType = method.GetRetType();
 		const bool hasHiddenParam = ValueUtils::IsHiddenParam(retType.GetType());
 		int refParamsCount = 0;
@@ -3024,6 +3043,8 @@ namespace v8lm {
 
 	Result<InitData> V8LanguageModule::Initialize(const Provider& provider, const Extension& module) {
 		_provider = std::make_unique<Provider>(provider);
+		_logger = _provider->Resolve<ILogger>();
+		_loader = _provider->Resolve<IAssemblyLoader>();
 
 		std::error_code ec;
 		const fs::path moduleBasePath = fs::absolute(module.GetLocation(), ec);
@@ -3224,6 +3245,8 @@ namespace v8lm {
 		_jsMethods.clear();
 		_jsObjects.clear();
 		_pluginsMap.clear();
+		_loader.reset();
+		_logger.reset();
 		_provider.reset();
 
 		_isolate->SetData(0, nullptr);
@@ -3440,7 +3463,7 @@ namespace v8lm {
 
 		if (tryCatch.HasCaught()) {
 			ReportException(tryCatch.Message());
-			_provider->Log(std::format(LOG_PREFIX "{}: call of 'pluginStart' failed", plugin.GetName()), Severity::Error);
+			_logger->Log(std::format(LOG_PREFIX "{}: call of 'pluginStart' failed", plugin.GetName()), Severity::Error);
 		}
 	}
 
@@ -3463,7 +3486,7 @@ namespace v8lm {
 
 		if (tryCatch.HasCaught()) {
 			ReportException(tryCatch.Message());
-			_provider->Log(std::format(LOG_PREFIX "{}: call of 'pluginUpdate' failed", plugin.GetName()), Severity::Error);
+			_logger->Log(std::format(LOG_PREFIX "{}: call of 'pluginUpdate' failed", plugin.GetName()), Severity::Error);
 		}
 	}
 
@@ -3484,7 +3507,7 @@ namespace v8lm {
 
 		if (tryCatch.HasCaught()) {
 			ReportException(tryCatch.Message());
-			_provider->Log(std::format(LOG_PREFIX "{}: call of 'pluginEnd' failed", plugin.GetName()), Severity::Error);
+			_logger->Log(std::format(LOG_PREFIX "{}: call of 'pluginEnd' failed", plugin.GetName()), Severity::Error);
 		}
 	}
 
@@ -3710,7 +3733,7 @@ namespace v8lm {
 
 		if (tryCatch.HasCaught()) {
 			ReportException(tryCatch.Message());
-			_provider->Log(std::format(LOG_PREFIX "{}: call of 'bindClassMethods' failed", className), Severity::Error);
+			_logger->Log(std::format(LOG_PREFIX "{}: call of 'bindClassMethods' failed", className), Severity::Error);
 		}
 
         if (!result->IsFunction()) {
@@ -4444,7 +4467,7 @@ namespace v8lm {
 	    if (module->GetStatus() < v8::Module::kInstantiated) {
 	        std::format_to(out, "Module status: {} (not instantiated yet)\n", plg::enum_to_string(module->GetStatus()));
 	        std::format_to(out, "Cannot extract exports - module must be instantiated first\n");
-	        g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	        g_v8lm.GetLogger()->Log(buffer, Severity::Debug);
 	        return;
 	    }
 
@@ -4460,7 +4483,7 @@ namespace v8lm {
 	    
 	    if (namespace_value.IsEmpty() || !namespace_value->IsObject()) {
 	        std::format_to(out, "Failed to get module namespace\n");
-	        g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	        g_v8lm.GetLogger()->Log(buffer, Severity::Debug);
 	        return;
 	    }
 
@@ -4470,7 +4493,7 @@ namespace v8lm {
 	    v8::Local<v8::Array> property_names;
 	    if (!namespace_obj->GetOwnPropertyNames(context).ToLocal(&property_names)) {
 	        std::format_to(out, "Failed to get property names\n");
-	        g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	        g_v8lm.GetLogger()->Log(buffer, Severity::Debug);
 	        return;
 	    }
 
@@ -4532,7 +4555,7 @@ namespace v8lm {
 	    std::format_to(out, "\n");
 	    
 	    // Log the complete buffer
-	    g_v8lm.GetProvider()->Log(buffer, Severity::Verbose);
+	    g_v8lm.GetLogger()->Log(buffer, Severity::Debug);
 	}
 #endif
 
@@ -4582,7 +4605,7 @@ namespace v8lm {
 				std::format_to(std::back_inserter(trace), "\n\t{} ({}:{})", function, file, line);
 			}
 		}
-		g_v8lm._provider->Log(trace, Severity::Error);
+		g_v8lm._logger->Log(trace, Severity::Error);
 	}
 
 	v8::Local<v8::String> V8LanguageModule::MakeString(std::string_view value) const {

@@ -36,7 +36,7 @@ namespace builtin {
 
 			v8::String::Utf8Value utf8(isolate, msg);
 			if (*utf8) {
-				g_v8lm.GetProvider()->Log(std::string_view{*utf8, static_cast<size_t>(utf8.length())}, severity);
+				g_v8lm.GetLogger()->Log(std::string_view{*utf8, static_cast<size_t>(utf8.length())}, severity);
 			}
 		}
 
