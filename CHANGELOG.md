@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.13...v2.2.0) (2026-03-10)
+
+
+### Features
+
+* add new call logging ([c6548c7](https://github.com/untrustedmodders/plugify-module-v8/commit/c6548c7bc908b6c8edc2878ee8e678ceb4124a4b))
+
+
+### Bug Fixes
+
+* add new alias tests ([a58ead7](https://github.com/untrustedmodders/plugify-module-v8/commit/a58ead72fd65216f9071731ab658c757cfd01d57))
+* add new dls module ([91e38b5](https://github.com/untrustedmodders/plugify-module-v8/commit/91e38b5d95fb81808fa77d43eb88b44e86e99453))
+* supress asserts in return set ([be2abe6](https://github.com/untrustedmodders/plugify-module-v8/commit/be2abe66fdd3aba755dcf4820ab53f999dae2e4c))
+
 ## [2.1.13](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.12...v2.1.13) (2026-01-03)
 
 
