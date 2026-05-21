@@ -8,6 +8,7 @@
 #include <plugify/language_module.hpp>
 #include <plugify/assembly_loader.hpp>
 #include <plugify/logger.hpp>
+#include <plugify/profiler.hpp>
 #include <plugify/method.hpp>
 #include <plugify/extension.hpp>
 #include <plugify/provider.hpp>
@@ -68,6 +69,7 @@ namespace v8lm {
 		static V8LanguageModule* Get(v8::Isolate* isolate) { return static_cast<V8LanguageModule*>(isolate->GetData(v8::Isolate::GetNumberOfDataSlots() - 1)); }
 		const std::unique_ptr<Provider>& GetProvider() const { return _provider; }
 		const std::shared_ptr<ILogger>& GetLogger() const { return _logger; }
+		const std::shared_ptr<IProfiler>& GetProfiler() const { return _profiler; }
 		const std::shared_ptr<IAssemblyLoader>& GetLoader() const { return _loader; }
 
 	private:
@@ -173,6 +175,7 @@ namespace v8lm {
 		bool PushObjectAsParam(const Property& paramType, v8::Local<v8::Value> item, ArgsScope& a);
 		bool PushObjectAsRefParam(const Property& paramType, v8::Local<v8::Value> item, ArgsScope& a);
 		v8::Local<v8::Value> StorageValueToObject(const Property& paramType, const ArgsScope& a, size_t index);
+		ScopedZone TraceCall(std::string_view methodName) const;
 
 		struct ModuleInfo {
 			std::unordered_map<std::string, v8::Global<v8::Module>> resolveCache;
@@ -248,6 +251,7 @@ namespace v8lm {
 	private:
 		std::unique_ptr<Provider> _provider;
 		std::shared_ptr<ILogger> _logger;
+		std::shared_ptr<IProfiler> _profiler;
 		std::shared_ptr<IAssemblyLoader> _loader;
 		std::unique_ptr<v8::ArrayBuffer::Allocator> _allocator;
 		v8::Isolate* _isolate;

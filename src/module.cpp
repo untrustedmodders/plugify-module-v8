@@ -2940,14 +2940,48 @@ namespace v8lm {
 		}
 	}
 
+	ScopedZone V8LanguageModule::TraceCall(std::string_view methodName) const {
+		ScopedZone zone;
+
+		if (v8::Local<v8::StackTrace> stack = v8::StackTrace::CurrentStackTrace(_isolate, 1); stack->GetFrameCount() > 0) {
+			v8::Local<v8::StackFrame> frame = stack->GetFrame(_isolate, 0);
+
+			v8::String::Utf8Value file(_isolate, frame->GetScriptName());
+			v8::String::Utf8Value function(_isolate, frame->GetFunctionName());
+			v8::String::Utf8Value module(_isolate, frame->GetScriptSource());
+
+			const size_t line = static_cast<size_t>(frame->GetLineNumber());
+			const size_t column = static_cast<size_t>(frame->GetColumn());
+			const std::string_view fileName(*file, static_cast<size_t>(file.length()));
+			const std::string_view functionName(*function, static_cast<size_t>(function.length()));
+			const std::string_view moduleName(*module, static_cast<size_t>(module.length()));
+
+			if (const auto& profiler = _profiler) {
+				zone = ScopedZone(profiler, ZoneInfo{std::format("{}::{}", moduleName, methodName), functionName, fileName, line, 0});
+			}
+
+			if (const auto& logger = _logger/*; logger && logger->GetLogLevel() <= Severity::Debug*/) {
+				logger->Log(methodName, Severity::Trace, Location(line, column, fileName, functionName, moduleName));
+			}
+		}
+
+		return zone;
+	}
+
 	void V8LanguageModule::ExternalCall(const Method& method, MemAddr data, uint64_t* parameters, size_t count, void* return_) {
+		[[maybe_unused]] const auto zone = TraceCall(method.GetName());
+
 		ParametersSpan params(parameters, count);
 		ReturnSlot ret(return_, 0);
 
 		// void (MethodJsCall*)(const v8::FunctionCallbackInfo<v8::Value>& args)
 		const auto& args = *params.Get<const v8::FunctionCallbackInfo<v8::Value>*>(0);
 
-		const auto paramTypes = method.GetParamTypes();
+		v8::Isolate* isolate = args.GetIsolate();
+		v8::Local<v8::Context> context = isolate->GetCurrentContext();
+		assert(isolate == _isolate);
+
+		const auto& paramTypes = method.GetParamTypes();
 		const size_t paramCount = paramTypes.size();
 		const size_t size = static_cast<size_t>(args.Length());
 		if (size != paramCount) {
@@ -2955,29 +2989,7 @@ namespace v8lm {
 			return;
 		}
 
-		v8::Isolate* isolate = args.GetIsolate();
-		v8::Local<v8::Context> context = isolate->GetCurrentContext();
-
-		if (const auto& logger = g_v8lm.GetLogger()/*; logger && logger->GetLogLevel() <= Severity::Debug*/) {
-			if (v8::Local<v8::StackTrace> stack = v8::StackTrace::CurrentStackTrace(isolate, 1); stack->GetFrameCount() > 0) {
-				v8::Local<v8::StackFrame> frame = stack->GetFrame(isolate, 0);
-
-				v8::String::Utf8Value file(isolate, frame->GetScriptName());
-				v8::String::Utf8Value function(isolate, frame->GetFunctionName());
-				v8::String::Utf8Value module(isolate, frame->GetScriptSource());
-
-				logger->Log(method.GetName(), Severity::Trace,
-					Location(
-						static_cast<size_t>(frame->GetLineNumber()),
-						static_cast<size_t>(frame->GetColumn()),
-						std::string_view(*file, static_cast<size_t>(file.length())),
-						std::string_view(*function, static_cast<size_t>(function.length())),
-						std::string_view(*module, static_cast<size_t>(module.length())))
-					);
-			}
-		}
-
-		const auto retType = method.GetRetType();
+		const auto& retType = method.GetRetType();
 		const bool hasHiddenParam = ValueUtils::IsHiddenParam(retType.GetType());
 		int refParamsCount = 0;
 
@@ -3045,6 +3057,7 @@ namespace v8lm {
 		_provider = std::make_unique<Provider>(provider);
 		_logger = _provider->Resolve<ILogger>();
 		_loader = _provider->Resolve<IAssemblyLoader>();
+		_profiler = _provider->TryResolve<IProfiler>();
 
 		std::error_code ec;
 		const fs::path moduleBasePath = fs::absolute(module.GetLocation(), ec);
@@ -3247,6 +3260,7 @@ namespace v8lm {
 		_pluginsMap.clear();
 		_loader.reset();
 		_logger.reset();
+		_profiler.reset();
 		_provider.reset();
 
 		_isolate->SetData(0, nullptr);
