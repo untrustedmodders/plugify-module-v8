@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.3.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.2.0...v2.3.0) (2026-05-24)
+
+
+### Features
+
+* add new error handling ([5d59b57](https://github.com/untrustedmodders/plugify-module-v8/commit/5d59b57476e376360a5353295075866cc99730cd))
+
+
+### Bug Fixes
+
+* add profiler ([1b70210](https://github.com/untrustedmodders/plugify-module-v8/commit/1b70210836f02708761dbf130753a0ec08787f81))
+
 ## [2.2.0](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.1.13...v2.2.0) (2026-03-10)
 
 
