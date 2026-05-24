@@ -333,7 +333,7 @@ namespace builtin {
 				UNUSED(callback->Get(isolate)->Call(context, v8::Undefined(isolate), static_cast<int>(args.size()), args.data()));
 
 				if (tryCatch.HasCaught()) {
-					g_v8lm.ReportException(tryCatch.Message());
+					g_v8lm.LogError(tryCatch.Message());
 					tryCatch.Reset();
 				}
 			});

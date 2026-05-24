@@ -35,6 +35,11 @@ namespace v8lm {
 		JsFunction jsFunction;
 	};
 
+	struct JsError {
+		std::string message;
+		std::string traceback;
+	};
+
 	enum class JsType : uint8_t {
 		Invalid,
 		String,
@@ -56,15 +61,16 @@ namespace v8lm {
 
 		// ILanguageModule
 		Result<InitData> Initialize(const Provider& provider, const Extension& module) override;
-		void Shutdown() override;
-		void OnUpdate(std::chrono::milliseconds dt) override;
+		Result<void> Shutdown() override;
+		Result<void> OnUpdate(std::chrono::milliseconds dt) override;
 
 		Result<LoadData> OnPluginLoad(const Extension& plugin) override;
-		void OnPluginStart(const Extension& plugin) override;
-		void OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds dt) override;
-		void OnPluginEnd(const Extension& plugin) override;
-		void OnMethodExport(const Extension& plugin) override;
-		bool IsDebugBuild() override;
+		Result<void> OnPluginStart(const Extension& plugin) override;
+		Result<void> OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds dt) override;
+		Result<void> OnPluginEnd(const Extension& plugin) override;
+		Result<void> OnMethodExport(const Extension& plugin) override;
+
+		bool IsDebugBuild() const noexcept override;
 
 		static V8LanguageModule* Get(v8::Isolate* isolate) { return static_cast<V8LanguageModule*>(isolate->GetData(v8::Isolate::GetNumberOfDataSlots() - 1)); }
 		const std::unique_ptr<Provider>& GetProvider() const { return _provider; }
@@ -225,7 +231,9 @@ namespace v8lm {
 		void ThrowRangeError(std::string_view error) const;
 		void ThrowTypeError(std::string_view error, v8::Local<v8::Value> value) const;
 		void ThrowTypeError(std::string_view error) const;
-		void ReportException(v8::Local<v8::Message> message) const;
+		JsError FetchError(v8::Local<v8::Message> exception) const;
+		void LogError(v8::Local<v8::Message> exception) const;
+		std::string LogError(v8::Local<v8::Message> exception, std::string_view name, std::string_view method) const;
 		void HandleUncaughtExceptionsInPromises();
 
 		v8::Local<v8::String> MakeString(std::string_view value) const;

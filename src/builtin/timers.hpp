@@ -25,7 +25,7 @@ namespace builtin {
 				UNUSED(callback->Get(isolate)->Call(context, context->Global(), 0, {}));
 
 				if (tryCatch.HasCaught()) {
-					g_v8lm.ReportException(tryCatch.Message());
+					g_v8lm.LogError(tryCatch.Message());
 					tryCatch.Reset();
 				}
 			});
@@ -68,7 +68,7 @@ namespace builtin {
 				UNUSED(callback->Get(isolate)->Call(context, context->Global(), 0, {}));
 
 				if (tryCatch.HasCaught()) {
-					g_v8lm.ReportException(tryCatch.Message());
+					g_v8lm.LogError(tryCatch.Message());
 					tryCatch.Reset();
 				}
 			}, true);

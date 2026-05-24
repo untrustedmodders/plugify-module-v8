@@ -2222,7 +2222,7 @@ namespace v8lm {
 			v8::Local<v8::Value> arg = (this->*convertFunc)(paramType, params, index);
 			if (arg.IsEmpty()) {
 				if (tryCatch.HasCaught()) {
-					ReportException(tryCatch.Message());
+					LogError(tryCatch.Message());
 				}
 				SetFallbackReturn(retType.GetType(), ret);
 				return;
@@ -2233,7 +2233,7 @@ namespace v8lm {
 		v8::Local<v8::Value> result;
 		if (!func.Get(_isolate)->Call(context, CreateJsObject(), static_cast<int>(paramsCount), args.data()).ToLocal(&result)) {
 			if (tryCatch.HasCaught()) {
-				ReportException(tryCatch.Message());
+				LogError(tryCatch.Message());
 			}
 			SetFallbackReturn(retType.GetType(), ret);
 			return;
@@ -2243,7 +2243,7 @@ namespace v8lm {
 			if (!result->IsArray()) {
 				ThrowTypeError("Expected array as return value", result);
 				if (tryCatch.HasCaught()) {
-					ReportException(tryCatch.Message());
+					LogError(tryCatch.Message());
 				}
 				SetFallbackReturn(retType.GetType(), ret);
 				return;
@@ -2253,7 +2253,7 @@ namespace v8lm {
 			if (resultArray->Length() != static_cast<uint32_t>(1 + refParamsCount)) {
 				ThrowRangeError(std::format("Returned array wrong size {}, expected {}", resultArray->Length(), 1 + refParamsCount));
 				if (tryCatch.HasCaught()) {
-					ReportException(tryCatch.Message());
+					LogError(tryCatch.Message());
 				}
 				SetFallbackReturn(retType.GetType(), ret);
 				return;
@@ -2269,7 +2269,7 @@ namespace v8lm {
 
 				if (!SetRefParam(resultArray->Get(context, 1 + k).ToLocalChecked(), paramType, params, index)) {
 					if (tryCatch.HasCaught()) {
-						ReportException(tryCatch.Message());
+						LogError(tryCatch.Message());
 						tryCatch.Reset();
 					}
 				}
@@ -2282,7 +2282,7 @@ namespace v8lm {
 		v8::Local<v8::Value> returnValue = refParamsCount != 0 ? result.As<v8::Array>()->Get(context, 0).ToLocalChecked() : result;
 		if (!SetReturn(returnValue, retType, ret)) {
 			if (tryCatch.HasCaught()) {
-				ReportException(tryCatch.Message());
+				LogError(tryCatch.Message());
 			}
 			SetFallbackReturn(retType.GetType(), ret);
 			return;
@@ -3232,7 +3232,7 @@ namespace v8lm {
 		return InitData{{ .hasUpdate = true }};
 	}
 
-	void V8LanguageModule::Shutdown() {
+	Result<void> V8LanguageModule::Shutdown() {
 		_taskScheduler.Reset();
 
 		_pluginClassObject.Reset();
@@ -3278,9 +3278,11 @@ namespace v8lm {
 
 		builtin::dls::Terminate();
 		builtin::fetch::Terminate();
+
+		return {};
 	}
 
-	void V8LanguageModule::OnUpdate(std::chrono::milliseconds dt) {
+	Result<void> V8LanguageModule::OnUpdate(std::chrono::milliseconds dt) {
 		v8::Locker locker(_isolate);
 		v8::Isolate::Scope isolateScope(_isolate);
 		v8::HandleScope handleScope(_isolate);
@@ -3294,6 +3296,8 @@ namespace v8lm {
 		_isolate->PerformMicrotaskCheckpoint();
 
 		HandleUncaughtExceptionsInPromises();
+
+		return {}; // TODO
 	}
 
 	Result<LoadData> V8LanguageModule::OnPluginLoad(const Extension& plugin) {
@@ -3460,7 +3464,7 @@ namespace v8lm {
 		return LoadData{ std::move(methods), &it->second, { !pluginUpdate.IsEmpty(), !pluginStart.IsEmpty(), !pluginEnd.IsEmpty(), !exportedMethods.empty() }};
 	}
 
-	void V8LanguageModule::OnPluginStart(const Extension& plugin) {
+	Result<void> V8LanguageModule::OnPluginStart(const Extension& plugin) {
 		const auto& [module, instance, update, start, end] = *plugin.GetUserData().RCast<PluginData*>();
 
 		v8::Locker locker(_isolate);
@@ -3476,12 +3480,13 @@ namespace v8lm {
 		UNUSED(function->Call(context, object, 0, nullptr));
 
 		if (tryCatch.HasCaught()) {
-			ReportException(tryCatch.Message());
-			_logger->Log(std::format(LOG_PREFIX "{}: call of 'pluginStart' failed", plugin.GetName()), Severity::Error);
+			return MakeError(LogError(tryCatch.Message(), plugin.GetName(), "pluginStart"));
 		}
+
+		return {};
 	}
 
-	void V8LanguageModule::OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds dt) {
+	Result<void> V8LanguageModule::OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds dt) {
 		const auto& [module, instance, update, start, end] = *plugin.GetUserData().RCast<PluginData*>();
 
 		v8::Locker locker(_isolate);
@@ -3499,12 +3504,13 @@ namespace v8lm {
 		UNUSED(function->Call(context, object, static_cast<int>(args.size()), args.data()));
 
 		if (tryCatch.HasCaught()) {
-			ReportException(tryCatch.Message());
-			_logger->Log(std::format(LOG_PREFIX "{}: call of 'pluginUpdate' failed", plugin.GetName()), Severity::Error);
+			return MakeError(LogError(tryCatch.Message(), plugin.GetName(), "pluginUpdate"));
 		}
+
+		return {};
 	}
 
-	void V8LanguageModule::OnPluginEnd(const Extension& plugin) {
+	Result<void> V8LanguageModule::OnPluginEnd(const Extension& plugin) {
 		const auto& [module, instance, update, start, end] = *plugin.GetUserData().RCast<PluginData*>();
 
 		v8::Locker locker(_isolate);
@@ -3520,9 +3526,10 @@ namespace v8lm {
 		UNUSED(function->Call(context, object, 0, nullptr));
 
 		if (tryCatch.HasCaught()) {
-			ReportException(tryCatch.Message());
-			_logger->Log(std::format(LOG_PREFIX "{}: call of 'pluginEnd' failed", plugin.GetName()), Severity::Error);
+			return MakeError(LogError(tryCatch.Message(), plugin.GetName(), "pluginEnd"));
 		}
+
+		return {};
 	}
 
 	JsFunction V8LanguageModule::FindExternal(void* funcAddr) const {
@@ -3692,7 +3699,7 @@ namespace v8lm {
             if (ctorFunc != exportFuncs.end()) {
             	constructors->Set(context, static_cast<uint32_t>(i), ctorFunc->second.Get(_isolate)).Check();
             } else {
-            	ThrowException(std::format(LOG_PREFIX "Constructor function not found: {}", constructorNames[i]));
+            	ThrowException(std::format("Constructor function not found: {}", constructorNames[i]));
             	return false;
             }
         }
@@ -3705,7 +3712,7 @@ namespace v8lm {
         	if (dtorFunc != exportFuncs.end()) {
             	destructor = dtorFunc->second.Get(_isolate);
             } else {
-            	ThrowException(std::format(LOG_PREFIX "Destructor function not found: {}", destructorName));
+            	ThrowException(std::format("Destructor function not found: {}", destructorName));
             	return false;
             }
         }
@@ -3717,7 +3724,7 @@ namespace v8lm {
         for (size_t i = 0; i < bindings.size(); ++i) {
             v8::Local<v8::Array> methodTuple = ConvertBinding(bindings[i]);
             if (methodTuple.IsEmpty()) {
-            	ThrowException(std::format(LOG_PREFIX "Method function not found: {}", bindings[i].GetMethod()));
+            	ThrowException(std::format("Method function not found: {}", bindings[i].GetMethod()));
                 return false;
             }
             methods->Set(context, static_cast<uint32_t>(i), methodTuple).Check();
@@ -3746,8 +3753,7 @@ namespace v8lm {
         }
 
 		if (tryCatch.HasCaught()) {
-			ReportException(tryCatch.Message());
-			_logger->Log(std::format(LOG_PREFIX "{}: call of 'bindClassMethods' failed", className), Severity::Error);
+			[[maybe_unused]] auto _ = LogError(tryCatch.Message(), className, "bindClassMethods");
 		}
 
         if (!result->IsFunction()) {
@@ -3782,7 +3788,7 @@ namespace v8lm {
 		for (const auto& [method, addr] : plugin.GetMethodsData()) {
 			v8::Local<v8::Function> func = FindJavascriptMethod(addr);
 			if (func.IsEmpty()) {
-				ThrowException(std::format(LOG_PREFIX "Not found '{}' method while CreateInternalModule for '{}' plugin", method.GetName(), plugin.GetName()));
+				ThrowException(std::format("Not found '{}' method while CreateInternalModule for '{}' plugin", method.GetName(), plugin.GetName()));
 				return {};
 			}
 			exportNames.emplace_back(MakeString(method.GetName()));
@@ -3894,7 +3900,8 @@ namespace v8lm {
 	}
 
 	// we uses synthetic instead
-	void V8LanguageModule::OnMethodExport(const Extension& plugin) {
+	Result<void> V8LanguageModule::OnMethodExport(const Extension& plugin) {
+		return {};
 	}
 
 	void V8LanguageModule::AddToFunctionsMap(void* funcAddr, const JsFunction& funcObj) {
@@ -3908,7 +3915,7 @@ namespace v8lm {
 		_jsObjects.emplace_back(std::move(anyObj));
 	}
 	
-	bool V8LanguageModule::IsDebugBuild() {
+	bool V8LanguageModule::IsDebugBuild() const noexcept {
 		return V8LM_IS_DEBUG;
 	}
 
@@ -3941,14 +3948,14 @@ namespace v8lm {
 
 			v8::MaybeLocal<v8::Script> compiledScript = v8::Script::Compile(context, source, &origin);
 			if (compiledScript.IsEmpty()) {
-				ReportException(tryCatch.Message());
+				LogError(tryCatch.Message());
 				return MakeError("Can not compiled '{}'", moduleName);
 			}
 
 			v8::Local<v8::Script> script = compiledScript.ToLocalChecked();
 			[[maybe_unused]] v8::MaybeLocal<v8::Value> returnVal = script->Run(context);
 			if (tryCatch.HasCaught()) {
-				ReportException(tryCatch.Message());
+				LogError(tryCatch.Message());
 				return MakeError("Can not execute '{}'", moduleName);
 			}
 
@@ -3974,7 +3981,7 @@ namespace v8lm {
 
 		if (!FetchESModuleTree(context, path).ToLocal(&module)) {
 			ASSERT(tryCatch.HasCaught());
-			ReportException(tryCatch.Message());
+			LogError(tryCatch.Message());
 			return {};
 		}
 
@@ -4015,7 +4022,7 @@ namespace v8lm {
 		}
 
 		if (tryCatch.HasCaught()) {
-			ReportException(tryCatch.Message());
+			LogError(tryCatch.Message());
 			return {};
 		}
 
@@ -4108,7 +4115,7 @@ namespace v8lm {
 		auto* self = Get(isolate);
 		v8::Local<v8::Value> error = info[0];
 		v8::Local<v8::Message> message = MakeErrorMessage(isolate, error);
-		self->ReportException(message);
+		self->LogError(message);
 	}
 
 	// static
@@ -4172,7 +4179,7 @@ namespace v8lm {
 				v8::TryCatch tryCatch(_isolate);
 				v8::MaybeLocal<v8::Module> maybeModule = customResolver(context, specifier, importAssertions, it->second.Get(_isolate));
 				if (tryCatch.HasCaught()) {
-					ReportException(tryCatch.Message());
+					LogError(tryCatch.Message());
 					return {};
 				}
 				v8::Local<v8::Module> module;
@@ -4262,7 +4269,7 @@ namespace v8lm {
 		_failedPromises.swap(list);
 
 		for (const auto& [_, message] : list) {
-			ReportException(message.Get(_isolate));
+			LogError(message.Get(_isolate));
 		}
 	}
 
@@ -4607,19 +4614,45 @@ namespace v8lm {
 		_isolate->ThrowException(v8::Exception::TypeError(MakeString(error)));
 	}
 
-	void V8LanguageModule::ReportException(v8::Local<v8::Message> message) const {
-		std::string trace = std::format(LOG_PREFIX "{}", ToString(message->Get()));
-		v8::Local<v8::StackTrace> stackTrace = message->GetStackTrace();
-		if (!stackTrace.IsEmpty()) {
-			for (int i = 0; i < stackTrace->GetFrameCount(); ++i) {
-				v8::Local<v8::StackFrame> frame = stackTrace->GetFrame(_isolate, i);
+	JsError V8LanguageModule::FetchError(v8::Local<v8::Message> exception) const {
+		JsError error{};
+
+		error.message = ToString(exception->Get());
+
+		v8::Local<v8::StackTrace> stack = exception->GetStackTrace();
+
+		if (!stack.IsEmpty()) {
+			error.traceback = std::format("{}\nstack traceback:\n", error.message);
+
+			for (int i = 0; i < stack->GetFrameCount(); ++i) {
+				v8::Local<v8::StackFrame> frame = stack->GetFrame(_isolate, i);
+
 				std::string file = ToStringOr(frame->GetScriptName(), "<script>");
 				std::string function = ToStringOr(frame->GetFunctionName(), "<top>");
 				int line = frame->GetLineNumber();
-				std::format_to(std::back_inserter(trace), "\n\t{} ({}:{})", function, file, line);
+
+				std::format_to(
+					std::back_inserter(error.traceback),
+					"\n\t{} ({}:{})",
+					function,
+					file,
+					line
+				);
 			}
 		}
-		g_v8lm._logger->Log(trace, Severity::Error);
+
+		return error;
+	}
+
+	void V8LanguageModule::LogError(v8::Local<v8::Message> exception) const {
+		auto [message, traceback] = FetchError(exception);
+		_logger->Log(std::format(LOG_PREFIX "{}", traceback.empty() ? message : traceback), Severity::Error);
+	}
+
+	std::string V8LanguageModule::LogError(v8::Local<v8::Message> exception, std::string_view name, std::string_view method) const {
+		auto [message, traceback] = FetchError(exception);
+		_logger->Log(std::format(LOG_PREFIX "{}: call of '{}' failed\n{}", name, method, traceback.empty() ? message : traceback), Severity::Error);
+		return message;
 	}
 
 	v8::Local<v8::String> V8LanguageModule::MakeString(std::string_view value) const {
