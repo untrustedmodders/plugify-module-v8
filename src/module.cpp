@@ -4296,12 +4296,12 @@ namespace v8lm {
 		constexpr int scriptId = -1;
 		auto sourceMapUrl = v8::Local<v8::Value>();
 		constexpr bool isOpaque = false;
-		constexpr bool isWarm = false;
+		constexpr bool isWasm = false;
 		constexpr bool isModule = true;
 		auto hostDefinedOptions = v8::Local<v8::PrimitiveArray>();
 		v8::ScriptOrigin origin(_isolate, resourceName, lineOffset, columnOffset,
 								isSharedCrossOrigin, scriptId, sourceMapUrl,
-								isOpaque, isWarm, isModule, hostDefinedOptions);
+								isOpaque, isWasm, isModule, hostDefinedOptions);
 		v8::ScriptCompiler::Source source(script, origin);
 
 		v8::Local<v8::Module> module;
