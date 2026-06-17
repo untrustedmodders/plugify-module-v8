@@ -3535,7 +3535,7 @@ namespace v8lm {
 	JsFunction V8LanguageModule::FindExternal(void* funcAddr) const {
 		const auto it = _externalMap.find(funcAddr);
 		if (it != _externalMap.end()) {
-			return std::get<JsFunction>(*it);
+			return it->second;
 		}
 		return nullptr;
 	}
