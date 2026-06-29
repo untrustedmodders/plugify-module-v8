@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.1...v2.3.2) (2026-06-29)
+
+
+### Bug Fixes
+
+* update plugify ([e368167](https://github.com/untrustedmodders/plugify-module-v8/commit/e368167d971af9d3bfc8a508a6a6e5dda1a78a54))
+* update plugify ([62db575](https://github.com/untrustedmodders/plugify-module-v8/commit/62db575330e3218494cfec53eff5516c78ad0b3e))
+* update profiler ([258fbf0](https://github.com/untrustedmodders/plugify-module-v8/commit/258fbf0f3a1597dfcce8248afa82496ce299cf58))
+* update tests ([dfb73ea](https://github.com/untrustedmodders/plugify-module-v8/commit/dfb73ea77020d168db5950ff7658ae4a5b239d14))
+
 ## [2.3.1](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.0...v2.3.1) (2026-05-24)
 
 
