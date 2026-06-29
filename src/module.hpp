@@ -88,7 +88,7 @@ namespace v8lm {
 		v8::Local<v8::Array> ConvertBinding(const Binding& binding);
 		v8::Local<v8::Value> GetInvalidValueForType(ValueType type, std::string_view invalidValue);
 		bool CreateClassObject(const Class& classData);
-		v8::Local<v8::Function> FindJavascriptMethod(MemAddr addr) const;
+		v8::Local<v8::Function> FindJavascriptMethod(Address addr) const;
 		void AddToFunctionsMap(void* funcAddr, const JsFunction& funcObj);
 		void AddToObjectsVec(v8::Global<v8::Object>&& anyObj);
 		JsFunction FindExternal(void* funcAddr) const;
@@ -245,8 +245,8 @@ namespace v8lm {
 		fs::path ToPath(v8::Local<v8::Value> value) const;
 		fs::path ToPathOr(v8::Local<v8::Value> value, const fs::path& or_path) const;
 
-		void InternalCall(const Method& method, MemAddr data, uint64_t* params, size_t count, void* ret);
-		void ExternalCall(const Method& method, MemAddr data, uint64_t* parameters, size_t count, void* ret);
+		void InternalCall(const Method& method, Address data, uint64_t* params, size_t count, void* ret);
+		void ExternalCall(const Method& method, Address data, uint64_t* parameters, size_t count, void* ret);
 
 		uint32_t AddTask(std::chrono::milliseconds delay, Action action, bool repeat = false) {
 			return _taskScheduler.AddTask(delay, std::move(action), repeat);

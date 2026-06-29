@@ -308,11 +308,11 @@ namespace v8lm {
 			std::is_same_v<T, plg::any>;
 
 	namespace detail {
-		void InternalCall(const Method* method, MemAddr data, uint64_t* params, size_t count, void* ret) {
+		void InternalCall(const Method* method, Address data, uint64_t* params, size_t count, void* ret) {
 			g_v8lm.InternalCall(*method, data, params, count, ret);
 		}
 
-		void ExternalCall(const Method* method, MemAddr data, uint64_t* params, size_t count, void* ret) {
+		void ExternalCall(const Method* method, Address data, uint64_t* params, size_t count, void* ret) {
 			g_v8lm.ExternalCall(*method, data, params, count, ret);
 		}
 	}
@@ -1019,7 +1019,7 @@ namespace v8lm {
 		JsFunction funcObj = std::make_shared<v8::Global<v8::Function>>(_isolate, func);
 
 		JitCallback callback{};
-		const MemAddr methodAddr = callback.GetJitFunc(method, &detail::InternalCall, funcObj.get());
+		const Address methodAddr = callback.GetJitFunc(method, &detail::InternalCall, funcObj.get());
 		if (!methodAddr) {
 			ThrowException(std::format("Lang module JIT failed to generate C++ wrapper from callback object '{}'", callback.GetError()));
 			return std::nullopt;
@@ -1258,7 +1258,7 @@ namespace v8lm {
 		}
 		JitCall call{};
 
-		const MemAddr callAddr = call.GetJitFunc(method, funcAddr);
+		const Address callAddr = call.GetJitFunc(method, funcAddr);
 		if (!callAddr) {
 			ThrowException(std::format("Lang module JIT failed to generate c++ call wrapper '{}'", call.GetError()));
 			return {};
@@ -1270,14 +1270,14 @@ namespace v8lm {
 		sig.AddArg(ValueType::Pointer);
 		sig.SetRet(ValueType::Void);
 
-		const MemAddr methodAddr = callback.GetJitFunc(sig, &method, &detail::ExternalCall, callAddr, false);
+		const Address methodAddr = callback.GetJitFunc(sig, &method, &detail::ExternalCall, callAddr, false);
 		if (!methodAddr) {
 			ThrowException(std::format("Lang module JIT failed to generate c++ v8::FunctionCallback wrapper '{}'", callback.GetError()));
 			return {};
 		}
 
 		v8::Local<v8::Function> object;
-		if (!v8::Function::New(_isolate->GetCurrentContext(), methodAddr.RCast<v8::FunctionCallback>()).ToLocal(&object)) {
+		if (!v8::Function::New(_isolate->GetCurrentContext(), methodAddr.As<v8::FunctionCallback>()).ToLocal(&object)) {
 			ThrowException("Fail to create function object from function pointer");
 			return {};
 		}
@@ -2191,7 +2191,7 @@ namespace v8lm {
 		}
 	}
 
-	void V8LanguageModule::InternalCall(const Method& method, MemAddr data, uint64_t* parameters, size_t count, void* return_) {
+	void V8LanguageModule::InternalCall(const Method& method, Address data, uint64_t* parameters, size_t count, void* return_) {
 		v8::Locker locker(_isolate);
 		v8::Isolate::Scope isolateScope(_isolate);
 		v8::HandleScope handleScope(_isolate);
@@ -2199,7 +2199,7 @@ namespace v8lm {
 		v8::Context::Scope contextScope(context);
 		v8::TryCatch tryCatch(_isolate);
 
-		v8::Global<v8::Function>& func = *data.RCast<v8::Global<v8::Function>*>();
+		v8::Global<v8::Function>& func = *data.As<v8::Global<v8::Function>*>();
 
 		const auto& retType = method.GetRetType();
 		const auto& paramTypes = method.GetParamTypes();
@@ -2336,7 +2336,7 @@ namespace v8lm {
 		}
 
 		JitCallback callback{};
-		const MemAddr methodAddr = callback.GetJitFunc(method, &detail::InternalCall, func.get());
+		const Address methodAddr = callback.GetJitFunc(method, &detail::InternalCall, func.get());
 		if (!methodAddr) {
 			return MakeError("jit error: {}", callback.GetError());
 		}
@@ -2955,20 +2955,21 @@ namespace v8lm {
 			const std::string_view fileName(*file, static_cast<size_t>(file.length()));
 			const std::string_view functionName(*function, static_cast<size_t>(function.length()));
 			const std::string_view moduleName(*module, static_cast<size_t>(module.length()));
+			const Location location(line, column, fileName, functionName, moduleName);
 
 			if (const auto& profiler = _profiler) {
-				zone = ScopedZone(profiler, ZoneInfo{std::format("{}::{}", moduleName, methodName), functionName, fileName, line, 0});
+				zone = ScopedZone(profiler, std::format("{}::{}", moduleName, methodName), location);
 			}
 
 			if (const auto& logger = _logger/*; logger && logger->GetLogLevel() <= Severity::Debug*/) {
-				logger->Log(methodName, Severity::Trace, Location(line, column, fileName, functionName, moduleName));
+				logger->Log(methodName, Severity::Trace, location);
 			}
 		}
 
 		return zone;
 	}
 
-	void V8LanguageModule::ExternalCall(const Method& method, MemAddr data, uint64_t* parameters, size_t count, void* return_) {
+	void V8LanguageModule::ExternalCall(const Method& method, Address data, uint64_t* parameters, size_t count, void* return_) {
 		[[maybe_unused]] const auto zone = TraceCall(method.GetName());
 
 		ParametersSpan params(parameters, count);
@@ -3014,7 +3015,7 @@ namespace v8lm {
 			}
 		}
 
-		v8::Local<v8::Value> result = MakeExternalCallWithObject(retType, data.RCast<JitCall::CallingFunc>(), a, r);
+		v8::Local<v8::Value> result = MakeExternalCallWithObject(retType, data.As<JitCall::CallingFunc>(), a, r);
 		if (result.IsEmpty()) {
 			// makeExternalCallFunc sets error
 			return;
@@ -3455,7 +3456,7 @@ namespace v8lm {
 		_jsMethods.reserve(methodsHolders.size());
 
 		for (auto& [method, methodData] : methodsHolders) {
-			const MemAddr methodAddr = methodData.jitCallback.GetFunction();
+			const Address methodAddr = methodData.jitCallback.GetFunction();
 			methods.emplace_back(method, methodAddr);
 			AddToFunctionsMap(methodAddr, methodData.jsFunction);
 			_jsMethods.emplace_back(std::move(methodData));
@@ -3465,7 +3466,7 @@ namespace v8lm {
 	}
 
 	Result<void> V8LanguageModule::OnPluginStart(const Extension& plugin) {
-		const auto& [module, instance, update, start, end] = *plugin.GetUserData().RCast<PluginData*>();
+		const auto& [module, instance, update, start, end] = *plugin.GetUserData().As<PluginData*>();
 
 		v8::Locker locker(_isolate);
 		v8::Isolate::Scope isolateScope(_isolate);
@@ -3487,7 +3488,7 @@ namespace v8lm {
 	}
 
 	Result<void> V8LanguageModule::OnPluginUpdate(const Extension& plugin, std::chrono::milliseconds dt) {
-		const auto& [module, instance, update, start, end] = *plugin.GetUserData().RCast<PluginData*>();
+		const auto& [module, instance, update, start, end] = *plugin.GetUserData().As<PluginData*>();
 
 		v8::Locker locker(_isolate);
 		v8::Isolate::Scope isolateScope(_isolate);
@@ -3511,7 +3512,7 @@ namespace v8lm {
 	}
 
 	Result<void> V8LanguageModule::OnPluginEnd(const Extension& plugin) {
-		const auto& [module, instance, update, start, end] = *plugin.GetUserData().RCast<PluginData*>();
+		const auto& [module, instance, update, start, end] = *plugin.GetUserData().As<PluginData*>();
 
 		v8::Locker locker(_isolate);
 		v8::Isolate::Scope isolateScope(_isolate);
@@ -3766,7 +3767,7 @@ namespace v8lm {
         return true;
     }
 
-	v8::Local<v8::Function> V8LanguageModule::FindJavascriptMethod(MemAddr addr) const {
+	v8::Local<v8::Function> V8LanguageModule::FindJavascriptMethod(Address addr) const {
 		for (const auto& [jitCallback, jsFunction] : _jsMethods) {
 			if (jitCallback.GetFunction() == addr) {
 				return jsFunction->Get(_isolate);
@@ -3837,7 +3838,7 @@ namespace v8lm {
 		for (const auto& [method, addr] : plugin.GetMethodsData()) {
 			JitCall call{};
 
-			const MemAddr callAddr = call.GetJitFunc(method, addr);
+			const Address callAddr = call.GetJitFunc(method, addr);
 			if (!callAddr) {
 				ThrowException(std::format("Lang module JIT failed to generate c++ call wrapper '{}'", call.GetError()));
 				return {};
@@ -3850,14 +3851,14 @@ namespace v8lm {
 			sig.SetRet(ValueType::Void);
 
 			// Generate function --> void (MethodJsCall*)(const v8::FunctionCallbackInfo<v8::Value>& info)
-			const MemAddr methodAddr = callback.GetJitFunc(sig, &method, &detail::ExternalCall, callAddr, false);
+			const Address methodAddr = callback.GetJitFunc(sig, &method, &detail::ExternalCall, callAddr, false);
 			if (!methodAddr)
 				break;
 
 			_moduleFunctions.emplace_back(std::move(callback), std::move(call));
 
 			v8::Local<v8::Function> func;
-			if (!v8::Function::New(_isolate->GetCurrentContext(), methodAddr.RCast<v8::FunctionCallback>()).ToLocal(&func)) {
+			if (!v8::Function::New(_isolate->GetCurrentContext(), methodAddr.As<v8::FunctionCallback>()).ToLocal(&func)) {
 				ThrowException("Fail to create function object from function pointer");
 				return {};
 			}
