@@ -35,6 +35,7 @@ using namespace std::chrono_literals;
 #include <windows.h>
 #include <winhttp.h>
 #else
+#include <unistd.h>
 #include <curl/curl.h>
 #endif
 
