@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.2...v2.3.3) (2026-08-16)
+
+
+### Bug Fixes
+
+* change schema path ([a520c1f](https://github.com/untrustedmodders/plugify-module-v8/commit/a520c1fb0c9f890a9b3ee7f35921d0e0f154ccd9))
+* update plugify and manifests ([6613011](https://github.com/untrustedmodders/plugify-module-v8/commit/661301112db467476a82a9a70de8171db280e502))
+
 ## [2.3.2](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.1...v2.3.2) (2026-06-29)
 
 
