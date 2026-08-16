@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.4](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.3...v2.3.4) (2026-08-16)
+
+
+### Bug Fixes
+
+* update plugify ([db5cf66](https://github.com/untrustedmodders/plugify-module-v8/commit/db5cf6674c1a75065f90d2783e86489e53b4b8a7))
+
 ## [2.3.3](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.2...v2.3.3) (2026-08-16)
 
 
