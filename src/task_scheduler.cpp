@@ -3,7 +3,7 @@
 using namespace v8lm;
 
 uint32_t TaskScheduler::AddTask(std::chrono::milliseconds delay, Action action, bool repeat) {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::scoped_lock lock(_mutex);
 
 	uint32_t id = ++_nextId;
 	_tasks.emplace(id, repeat, false, false, Clock::now() + delay, delay, std::move(action));
@@ -11,7 +11,7 @@ uint32_t TaskScheduler::AddTask(std::chrono::milliseconds delay, Action action, 
 }
 
 void TaskScheduler::RemoveTask(uint32_t id) {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::scoped_lock lock(_mutex);
 
 	auto it = std::find_if(_tasks.begin(), _tasks.end(), [id](const Task& task) {
 		return task.id == id;
@@ -27,7 +27,7 @@ void TaskScheduler::RemoveTask(uint32_t id) {
 }
 
 void TaskScheduler::RescheduleTask(uint32_t id, std::chrono::milliseconds newDelay) {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::scoped_lock lock(_mutex);
 
 	auto it = std::find_if(_tasks.begin(), _tasks.end(), [id](const Task& task) {
 		return task.id == id;
@@ -44,8 +44,11 @@ void TaskScheduler::RescheduleTask(uint32_t id, std::chrono::milliseconds newDel
 }
 
 void TaskScheduler::Run() {
+	std::scoped_lock lock(_mutex);
+
+	auto now = Clock::now();
+
 	while (!_tasks.empty()) {
-		auto now = Clock::now();
 		auto it = _tasks.begin();
 
 		if (now >= it->executeTime) {
@@ -68,7 +71,7 @@ void TaskScheduler::Run() {
 }
 
 void TaskScheduler::Reset() {
-	std::lock_guard<std::mutex> lock(_mutex);
+	std::scoped_lock lock(_mutex);
 
 	_tasks.clear();
 }

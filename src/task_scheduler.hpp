@@ -25,9 +25,9 @@ namespace v8lm {
 	class TaskScheduler {
 	private:
 		std::set<Task> _tasks;
-		std::mutex _mutex;
+		std::recursive_mutex _mutex;
 		static inline uint32_t _nextId = static_cast<uint32_t>(-1);
-		
+
 	public:
 		uint32_t AddTask(std::chrono::milliseconds delay, Action action, bool repeat = false);
 		void RemoveTask(uint32_t id);
