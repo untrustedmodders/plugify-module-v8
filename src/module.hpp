@@ -190,7 +190,8 @@ namespace v8lm {
 		};
 
 		Result<v8::Local<v8::Data>> ExecuteModule(v8::Local<v8::Context> context, const fs::path& requiringDir, const std::string& moduleName);
-		v8::MaybeLocal<v8::Module> LoadModule(v8::Local<v8::Context> context, const fs::path& path, v8::Local<v8::Promise::Resolver> resolver);
+		// `error`, when given, receives the reason the module could not be loaded.
+		v8::MaybeLocal<v8::Module> LoadModule(v8::Local<v8::Context> context, const fs::path& path, v8::Local<v8::Promise::Resolver> resolver, std::string* error = nullptr);
 		bool LoadFile(const fs::path& requiringDir, const std::string& moduleName, fs::path& path, std::string& content);
 		v8::MaybeLocal<v8::Module> FetchESModuleTree(v8::Local<v8::Context> context, const fs::path& path);
 		v8::MaybeLocal<v8::Module> FetchCJSModuleAsESModule(v8::Local<v8::Context> context, const std::string& moduleName);
@@ -222,6 +223,24 @@ namespace v8lm {
 												  v8::Local<v8::FixedArray> importAssertions);
 
 		void ImportDynamic(const fs::path& path);
+
+		// Builds an Error carrying a Node-style `code` plus the `specifier`/`referrer`
+		// that failed, so `import()` rejections are inspectable from JS.
+		v8::Local<v8::Value> MakeImportError(v8::Local<v8::Context> context,
+											 std::string_view code,
+											 std::string_view message,
+											 std::string_view specifier,
+											 std::string_view referrer) const;
+
+		// Guarantees an exception is pending after a failed V8 call: keeps V8's own
+		// error when there is one, otherwise raises the described import error.
+		void RethrowOr(v8::Local<v8::Context> context,
+					   v8::TryCatch& tryCatch,
+					   std::string_view code,
+					   std::string_view message,
+					   std::string_view specifier,
+					   std::string_view referrer) const;
+
 		void CallTimeout(uint32_t id);
 
 		void RemovePendingFailedPromise(v8::Local<v8::Promise> promise);

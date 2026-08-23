@@ -3293,7 +3293,10 @@ namespace v8lm {
 
 		v8::TryCatch tryCatch(_isolate);
 		_taskScheduler.Run();
-		ASSERT(!tryCatch.HasCaught());
+		if (tryCatch.HasCaught()) {
+			LogError(tryCatch.Message());
+			tryCatch.Reset();
+		}
 
 		_isolate->PerformMicrotaskCheckpoint();
 
@@ -3937,9 +3940,10 @@ namespace v8lm {
 		}
 
 		if (path.extension() == ".mjs") {
-			v8::MaybeLocal<v8::Module> module = LoadModule(context, path, {});
+			std::string error;
+			v8::MaybeLocal<v8::Module> module = LoadModule(context, path, {}, &error);
 			if (module.IsEmpty()) {
-				return MakeError("Can not instantiate '{}'", moduleName);
+				return MakeError("Can not instantiate '{}': {}", moduleName, error);
 			}
 			return module.ToLocalChecked();
 		} else {
@@ -3951,14 +3955,14 @@ namespace v8lm {
 			v8::MaybeLocal<v8::Script> compiledScript = v8::Script::Compile(context, source, &origin);
 			if (compiledScript.IsEmpty()) {
 				LogError(tryCatch.Message());
-				return MakeError("Can not compiled '{}'", moduleName);
+				return MakeError("Can not compile '{}': {}", moduleName, FetchError(tryCatch.Message()).message);
 			}
 
 			v8::Local<v8::Script> script = compiledScript.ToLocalChecked();
 			[[maybe_unused]] v8::MaybeLocal<v8::Value> returnVal = script->Run(context);
 			if (tryCatch.HasCaught()) {
 				LogError(tryCatch.Message());
-				return MakeError("Can not execute '{}'", moduleName);
+				return MakeError("Can not execute '{}': {}", moduleName, FetchError(tryCatch.Message()).message);
 			}
 
 			return script;
@@ -3977,55 +3981,80 @@ namespace v8lm {
 	// Otherwise, the module is either fully loaded and ready, or has a top-level
 	// await and is still pending. In those case, a resolver or reject handler
 	// will handle cases 1 and 2 later.
-	v8::MaybeLocal<v8::Module> V8LanguageModule::LoadModule(v8::Local<v8::Context> context, const fs::path& path, v8::Local<v8::Promise::Resolver> resolver) {
+	v8::MaybeLocal<v8::Module> V8LanguageModule::LoadModule(v8::Local<v8::Context> context, const fs::path& path, v8::Local<v8::Promise::Resolver> resolver, std::string* error) {
 		v8::TryCatch tryCatch(_isolate);
 		v8::Local<v8::Module> module;
 
-		if (!FetchESModuleTree(context, path).ToLocal(&module)) {
-			ASSERT(tryCatch.HasCaught());
-			LogError(tryCatch.Message());
+		// Every failure exits through here, so returning a module always means the
+		// resolver (when there is one) has been settled and the caller can stop
+		// worrying about it. `fallback` describes failures V8 left unexplained.
+		auto fail = [&](std::string_view fallback) -> v8::MaybeLocal<v8::Module> {
+			v8::Local<v8::Message> message = tryCatch.HasCaught() ? tryCatch.Message() : v8::Local<v8::Message>();
+			if (!message.IsEmpty()) {
+				LogError(message);
+				if (error) {
+					*error = FetchError(message).message;
+				}
+			} else {
+				_logger->Log(std::format(LOG_PREFIX "{}", fallback), Severity::Error);
+				if (error) {
+					*error = std::string(fallback);
+				}
+			}
 			return {};
+		};
+
+		if (!FetchESModuleTree(context, path).ToLocal(&module)) {
+			return fail(std::format("Can not fetch '{}'", plg::as_string(path)));
 		}
 
-		if (module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
-			v8::Local<v8::Value> result;
-			if (module->Evaluate(context).ToLocal(&result)) {
-				v8::Local<v8::Promise> promise = result.As<v8::Promise>();
+		if (!module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
+			return fail(std::format("Can not instantiate '{}'", plg::as_string(path)));
+		}
 
-				if (resolver.IsEmpty()) {
-					// Loading the main module.
-					if (promise->State() == v8::Promise::kPending) {
-						UNUSED(promise->Then(
-								context,
-								v8::Function::New(context, OnMainModuleResolve).ToLocalChecked(),
-								v8::Function::New(context, OnMainModuleFailure).ToLocalChecked()));
-					}
-				} else {
-					// Dynamic import: pass the result to the resolver.
-					v8::Local<v8::Value> ns = module->GetModuleNamespace();
-					if (promise->State() == v8::Promise::kPending) {
-						v8::Local<v8::Array> data = v8::Array::New(_isolate, 2);
-						ASSERT(data->Set(context, 0, resolver).FromMaybe(false));
-						ASSERT(data->Set(context, 1, ns).FromMaybe(false));
-						UNUSED(promise->Then(
-								context,
-								v8::Function::New(context, OnDynamicModuleResolve, data)
-										.ToLocalChecked(),
-								v8::Function::New(context, OnDynamicModuleFailure, resolver)
-										.ToLocalChecked()));
-					} else if (promise->State() == v8::Promise::kFulfilled) {
-						ASSERT(resolver->Resolve(context, ns).FromMaybe(false));
-					} else {
-						RemovePendingFailedPromise(promise);
-						ASSERT(resolver->Reject(context, promise->Result()).FromMaybe(false));
-					}
-				}
+		v8::Local<v8::Value> result;
+		if (!module->Evaluate(context).ToLocal(&result)) {
+			return fail(std::format("Can not evaluate '{}'", plg::as_string(path)));
+		}
+
+		// Module evaluation always yields a promise; bail out rather than
+		// blind-casting if that ever stops holding.
+		if (!result->IsPromise()) {
+			return fail(std::format("Evaluation of '{}' did not return a promise", plg::as_string(path)));
+		}
+		v8::Local<v8::Promise> promise = result.As<v8::Promise>();
+
+		if (resolver.IsEmpty()) {
+			// Loading the main module.
+			if (promise->State() == v8::Promise::kPending) {
+				UNUSED(promise->Then(
+						context,
+						v8::Function::New(context, OnMainModuleResolve).ToLocalChecked(),
+						v8::Function::New(context, OnMainModuleFailure).ToLocalChecked()));
+			}
+		} else {
+			// Dynamic import: pass the result to the resolver.
+			v8::Local<v8::Value> ns = module->GetModuleNamespace();
+			if (promise->State() == v8::Promise::kPending) {
+				v8::Local<v8::Array> data = v8::Array::New(_isolate, 2);
+				ASSERT(data->Set(context, 0, resolver).FromMaybe(false));
+				ASSERT(data->Set(context, 1, ns).FromMaybe(false));
+				UNUSED(promise->Then(
+						context,
+						v8::Function::New(context, OnDynamicModuleResolve, data)
+								.ToLocalChecked(),
+						v8::Function::New(context, OnDynamicModuleFailure, resolver)
+								.ToLocalChecked()));
+			} else if (promise->State() == v8::Promise::kFulfilled) {
+				ASSERT(resolver->Resolve(context, ns).FromMaybe(false));
+			} else {
+				RemovePendingFailedPromise(promise);
+				ASSERT(resolver->Reject(context, promise->Result()).FromMaybe(false));
 			}
 		}
 
 		if (tryCatch.HasCaught()) {
-			LogError(tryCatch.Message());
-			return {};
+			return fail(std::format("Can not load '{}'", plg::as_string(path)));
 		}
 
 		return module;
@@ -4038,36 +4067,49 @@ namespace v8lm {
 		bool isESM = info[1]->BooleanValue(isolate);
 		if (isESM) {
 			fs::path path = ToString(info[2]);
+			const std::string& file = plg::as_string(path);
 			v8::Local<v8::Module> module;
 
 			if (!FetchESModuleTree(context, path).ToLocal(&module)) {
+				return; // Already throw
+			}
+
+			v8::TryCatch tryCatch(_isolate);
+			if (!module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
+				RethrowOr(context, tryCatch, "ERR_MODULE_INSTANTIATION",
+						std::format("Instantiation of '{}' failed", file), file, {});
 				return;
 			}
 
-			if (module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
-				v8::MaybeLocal<v8::Value> maybeResult = module->Evaluate(context);
-				v8::Local<v8::Value> result;
-				if (maybeResult.ToLocal(&result)) {
-					if (result->IsPromise()) {
-						v8::Local<v8::Promise> resultPromise = result.As<v8::Promise>();
-						while (resultPromise->State() == v8::Promise::kPending) {
-							_isolate->PerformMicrotaskCheckpoint();
-						}
+			v8::Local<v8::Value> result;
+			if (!module->Evaluate(context).ToLocal(&result)) {
+				RethrowOr(context, tryCatch, "ERR_MODULE_EVALUATION",
+						std::format("Evaluation of '{}' failed", file), file, {});
+				return;
+			}
 
-						if (resultPromise->State() == v8::Promise::kRejected) {
-							resultPromise->MarkAsHandled();
-							_isolate->ThrowException(resultPromise->Result());
-							return;
-						}
-					}
-					info.GetReturnValue().Set(module->GetModuleNamespace());
+			if (result->IsPromise()) {
+				v8::Local<v8::Promise> resultPromise = result.As<v8::Promise>();
+				while (resultPromise->State() == v8::Promise::kPending) {
+					_isolate->PerformMicrotaskCheckpoint();
+				}
+
+				if (resultPromise->State() == v8::Promise::kRejected) {
+					resultPromise->MarkAsHandled();
+					RemovePendingFailedPromise(resultPromise);
+					_isolate->ThrowException(resultPromise->Result());
+					return;
 				}
 			}
+			info.GetReturnValue().Set(module->GetModuleNamespace());
 			return;
 		}
 
 		v8::ScriptOrigin origin(_isolate, info[2]);
-		v8::Local<v8::String> source = info[0]->ToString(context).ToLocalChecked();
+		v8::Local<v8::String> source;
+		if (!info[0]->ToString(context).ToLocal(&source)) {
+			return; // Already throw
+		}
 
 		v8::MaybeLocal<v8::Script> script = v8::Script::Compile(context, source, &origin);
 		if (script.IsEmpty()) {
@@ -4167,37 +4209,80 @@ namespace v8lm {
 		if (!maybeResolver.ToLocal(&resolver)) {
 			return {};
 		}
-		ASSERT(resourceName->IsString());
 		std::string moduleName = ToString(specifier);
-		fs::path resourcePath = ToString(resourceName);
+		// Scripts compiled without an origin (eval, embedder-supplied sources) have
+		// no usable referrer; resolve those relative to nothing rather than abort.
+		fs::path resourcePath = resourceName->IsString() ? ToPath(resourceName) : fs::path();
 		fs::path requiringDir = resourcePath.parent_path();
 
 		fs::path path;
 		if (!_moduleLoader->Search(requiringDir, moduleName, path)) {
+			const std::string& referrer = plg::as_string(resourcePath);
+
 			// Try import as custom module
 			if (customResolver) {
 				auto it = _pathToModule.find(resourcePath);
+				if (it == _pathToModule.end()) {
+					v8::Local<v8::Value> error = MakeImportError(context, "ERR_UNKNOWN_REFERRER",
+							std::format("Cannot resolve '{}': referrer '{}' is not a loaded module", moduleName, referrer),
+							moduleName, referrer);
+					ASSERT(resolver->Reject(context, error).FromMaybe(false));
+					return resolver->GetPromise();
+				}
 
 				v8::TryCatch tryCatch(_isolate);
 				v8::MaybeLocal<v8::Module> maybeModule = customResolver(context, specifier, importAssertions, it->second.Get(_isolate));
 				if (tryCatch.HasCaught()) {
-					LogError(tryCatch.Message());
-					return {};
+					ASSERT(resolver->Reject(context, tryCatch.Exception()).FromMaybe(false));
+					return resolver->GetPromise();
 				}
 				v8::Local<v8::Module> module;
 				if (!maybeModule.ToLocal(&module)) {
-					return {};
+					v8::Local<v8::Value> error = MakeImportError(context, "ERR_MODULE_NOT_FOUND",
+							std::format("Custom resolver returned no module for '{}' imported from '{}'", moduleName, referrer),
+							moduleName, referrer);
+					ASSERT(resolver->Reject(context, error).FromMaybe(false));
+					return resolver->GetPromise();
 				}
-				if (module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
-					v8::Local<v8::Value> result;
-					if (module->Evaluate(context).ToLocal(&result)) {
-						v8::Local<v8::Value> ns = module->GetModuleNamespace();
-						ASSERT(resolver->Resolve(context, ns).FromMaybe(false));
-						return resolver->GetPromise();
-					}
+				// ResolveModule can only serve modules we track, and this one came from
+				// the embedder, so register it before instantiation reaches it.
+				if (FindModuleInfo(module) == _idToModuleInfo.end()) {
+					int id = module->IsSyntheticModule() ? module->GetIdentityHash() : module->ScriptId();
+					ModuleInfo& moduleInfo = _idToModuleInfo.emplace(id, ModuleInfo{})->second;
+					moduleInfo.module.Reset(_isolate, module);
 				}
+
+				if (!module->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
+					v8::Local<v8::Value> error = tryCatch.HasCaught()
+						? tryCatch.Exception()
+						: MakeImportError(context, "ERR_MODULE_INSTANTIATION",
+								std::format("Instantiation of '{}' imported from '{}' failed", moduleName, referrer),
+								moduleName, referrer);
+					ASSERT(resolver->Reject(context, error).FromMaybe(false));
+					return resolver->GetPromise();
+				}
+				v8::Local<v8::Value> result;
+				if (!module->Evaluate(context).ToLocal(&result)) {
+					v8::Local<v8::Value> error = tryCatch.HasCaught()
+						? tryCatch.Exception()
+						: MakeImportError(context, "ERR_MODULE_EVALUATION",
+								std::format("Evaluation of '{}' imported from '{}' failed", moduleName, referrer),
+								moduleName, referrer);
+					ASSERT(resolver->Reject(context, error).FromMaybe(false));
+					return resolver->GetPromise();
+				}
+
+				v8::Local<v8::Value> ns = module->GetModuleNamespace();
+				ASSERT(resolver->Resolve(context, ns).FromMaybe(false));
+				return resolver->GetPromise();
 			}
-			return {};
+
+			// No custom resolver: reject with a real error instead of dropping the promise.
+			v8::Local<v8::Value> error = MakeImportError(context, "ERR_MODULE_NOT_FOUND",
+					std::format("Cannot find module '{}' imported from '{}'", moduleName, referrer),
+					moduleName, referrer);
+			ASSERT(resolver->Reject(context, error).FromMaybe(false));
+			return resolver->GetPromise();
 		}
 
 		auto it = _dynamicImports.find(path);
@@ -4224,12 +4309,17 @@ namespace v8lm {
 		v8::TryCatch tryCatch(_isolate);
 
 		auto it = _dynamicImports.find(path);
-		ASSERT(it != _dynamicImports.end());
+		if (it == _dynamicImports.end()) {
+			// The pending imports were dropped (shutdown or reload) after this task
+			// was queued; nothing left to settle.
+			return;
+		}
 
 		v8::Local<v8::Promise::Resolver> resolver = it->second.Get(_isolate);
 		_dynamicImports.erase(it);
 
-		v8::MaybeLocal<v8::Module> module = LoadModule(context, path, resolver);
+		std::string error;
+		v8::MaybeLocal<v8::Module> module = LoadModule(context, path, resolver, &error);
 		if (!module.IsEmpty()) {
 			// Everything has been handled inside LoadModule.
 			tryCatch.Reset();
@@ -4243,11 +4333,40 @@ namespace v8lm {
 				// that has a syntax error in the imported module.
 				tryCatch.Reset();
 			} else {
-				exception = v8::Exception::Error(v8::String::NewFromUtf8Literal(_isolate, "Failed to import."));
+				const std::string& file = plg::as_string(path);
+				exception = MakeImportError(context, "ERR_MODULE_LOAD_FAILED",
+						error.empty() ? std::format("Failed to import '{}'", file)
+									  : std::format("Failed to import '{}': {}", file, error),
+						file, {});
 			}
 			ASSERT(!exception.IsEmpty());
 			ASSERT(resolver->Reject(context, exception).FromMaybe(false));
 		}
+	}
+
+	v8::Local<v8::Value> V8LanguageModule::MakeImportError(
+			v8::Local<v8::Context> context, std::string_view code,
+			std::string_view message, std::string_view specifier,
+			std::string_view referrer) const {
+		v8::Local<v8::Value> error = v8::Exception::Error(MakeString(message));
+		v8::Local<v8::Object> object = error.As<v8::Object>();
+		UNUSED(object->Set(context, MakeString("code"), MakeString(code)));
+		UNUSED(object->Set(context, MakeString("specifier"), MakeString(specifier)));
+		if (!referrer.empty()) {
+			UNUSED(object->Set(context, MakeString("referrer"), MakeString(referrer)));
+		}
+		return error;
+	}
+
+	void V8LanguageModule::RethrowOr(
+			v8::Local<v8::Context> context, v8::TryCatch& tryCatch,
+			std::string_view code, std::string_view message,
+			std::string_view specifier, std::string_view referrer) const {
+		if (tryCatch.HasCaught()) {
+			tryCatch.ReThrow();
+			return;
+		}
+		_isolate->ThrowException(MakeImportError(context, code, message, specifier, referrer));
 	}
 
 	void V8LanguageModule::RemovePendingFailedPromise(v8::Local<v8::Promise> promise) {
@@ -4315,79 +4434,114 @@ namespace v8lm {
 		// Look up its dependencies, so that they can be instantiated later too.
 		_pathToModule.emplace(path, v8::Global<v8::Module>(_isolate, module));
 		int id = module->IsSyntheticModule() ? module->GetIdentityHash() : module->ScriptId();
-		ModuleInfo& info = _idToModuleInfo.emplace(id, ModuleInfo{})->second;
+		auto infoIt = _idToModuleInfo.emplace(id, ModuleInfo{});
+		ModuleInfo& info = infoIt->second;
 		info.module.Reset(_isolate, module);
 
 		fs::path dir = path;
 		dir.remove_filename();
 
-		v8::Local<v8::FixedArray> requests = module->GetModuleRequests();
-		int length = requests->Length();
-		for (int i = 0; i < length; ++i) {
-			v8::Local<v8::ModuleRequest> request = requests->Get(context, i).As<v8::ModuleRequest>();
-			std::string refModuleName = ToString(request->GetSpecifier());
+		const std::string& referrer = plg::as_string(path);
 
-			if (refModuleName.starts_with(':')) {
-				const auto plugin = _provider->FindExtension(refModuleName.substr(1));
-				if (plugin) {
+		// The entry registered above is only usable once every request below has a
+		// resolveCache entry; the lambda lets a failure unregister it again instead
+		// of leaving a half-built module for the next import to pick up.
+		auto fetchRequests = [&]() -> bool {
+			v8::Local<v8::FixedArray> requests = module->GetModuleRequests();
+			int length = requests->Length();
+			for (int i = 0; i < length; ++i) {
+				v8::Local<v8::ModuleRequest> request = requests->Get(context, i).As<v8::ModuleRequest>();
+				std::string refModuleName = ToString(request->GetSpecifier());
+
+				if (refModuleName.starts_with(':')) {
+					const std::string extensionName = refModuleName.substr(1);
+					const auto plugin = _provider->FindExtension(extensionName);
+					if (!plugin) {
+						_isolate->ThrowException(MakeImportError(context, "ERR_EXTENSION_NOT_FOUND",
+								std::format("Cannot resolve '{}' imported from '{}': extension '{}' is not loaded", refModuleName, referrer, extensionName),
+								refModuleName, referrer));
+						return false;
+					}
 					v8::MaybeLocal<v8::Module> refModule = CreateInternalModule(*plugin);
 					if (refModule.IsEmpty()) {
 						refModule = CreateExternalModule(*plugin);
 					}
 					if (refModule.IsEmpty()) {
-						return {}; // Already throw
+						return false; // Already throw
 					}
 					v8::Local<v8::Module> synModule = refModule.ToLocalChecked();
-					if (synModule->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
-						v8::Local<v8::Value> result;
-						if (synModule->Evaluate(context).ToLocal(&result)) {
-							info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, synModule));
-							continue;
-						}
+					v8::TryCatch tryCatch(_isolate);
+					if (!synModule->InstantiateModule(context, ResolveModule).FromMaybe(false)) {
+						RethrowOr(context, tryCatch, "ERR_MODULE_INSTANTIATION",
+								std::format("Instantiation of '{}' imported from '{}' failed", refModuleName, referrer),
+								refModuleName, referrer);
+						return false;
 					}
+					v8::Local<v8::Value> result;
+					if (!synModule->Evaluate(context).ToLocal(&result)) {
+						RethrowOr(context, tryCatch, "ERR_MODULE_EVALUATION",
+								std::format("Evaluation of '{}' imported from '{}' failed", refModuleName, referrer),
+								refModuleName, referrer);
+						return false;
+					}
+					info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, synModule));
+					continue;
 				}
-			}
 
-			fs::path refPath;
-			if (_moduleLoader->Search(dir, refModuleName, refPath)) {
-				const std::string& refName = plg::as_string(refPath.filename());
-				if (refName.ends_with("package.json")) {
-					std::string package;
-					if (_moduleLoader->Load(refPath, package)) {
-						std::array args = { MakeString(package).As<v8::Value>() };
+				fs::path refPath;
+				if (_moduleLoader->Search(dir, refModuleName, refPath)) {
+					const std::string& refName = plg::as_string(refPath.filename());
+					if (refName.ends_with("package.json")) {
+						std::string package;
+						if (_moduleLoader->Load(refPath, package)) {
+							std::array args = { MakeString(package).As<v8::Value>() };
 
-						v8::MaybeLocal<v8::Value> maybeRet = _getESMMain.Get(_isolate)->Call(context, CreateJsObject(), static_cast<int>(args.size()), args.data());
+							v8::MaybeLocal<v8::Value> maybeRet = _getESMMain.Get(_isolate)->Call(context, CreateJsObject(), static_cast<int>(args.size()), args.data());
 
-						v8::Local<v8::Value> esmMainValue;
-						if (maybeRet.ToLocal(&esmMainValue) && esmMainValue->IsString()) {
-							std::string esmMain = ToString(esmMainValue);
-							fs::path esmMainPath;
-							if (_moduleLoader->Search(refPath, esmMain, esmMainPath)) {
-								refPath = std::move(esmMainPath);
+							v8::Local<v8::Value> esmMainValue;
+							if (maybeRet.ToLocal(&esmMainValue) && esmMainValue->IsString()) {
+								std::string esmMain = ToString(esmMainValue);
+								fs::path esmMainPath;
+								if (_moduleLoader->Search(refPath, esmMain, esmMainPath)) {
+									refPath = std::move(esmMainPath);
+								}
 							}
 						}
 					}
-				}
-				else if (refName.ends_with(".mjs") || refName.ends_with(".js")) {
-					v8::MaybeLocal<v8::Module> refModule = FetchESModuleTree(context, refPath);
-					if (refModule.IsEmpty()) {
-						return {}; // Already throw
+					else if (refName.ends_with(".mjs") || refName.ends_with(".js")) {
+						v8::MaybeLocal<v8::Module> refModule = FetchESModuleTree(context, refPath);
+						if (refModule.IsEmpty()) {
+							return false; // Already throw
+						}
+						info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, refModule.ToLocalChecked()));
+						continue;
 					}
-					info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, refModule.ToLocalChecked()));
-					continue;
 				}
-			}
 
-			v8::MaybeLocal<v8::Module> refModule = FetchCJSModuleAsESModule(context, refPath.extension() == ".cjs" ? plg::as_string(refPath) : refModuleName);
-			if (refModule.IsEmpty()) {
-				// If we have custom resolver not throw here, to allow resolve dynamically
-				if (!customResolver) {
-					ThrowException(std::format("Can not resolve '{}', import by '{}'", refModuleName, plg::as_string(path)));
+				v8::MaybeLocal<v8::Module> refModule = FetchCJSModuleAsESModule(context, refPath.extension() == ".cjs" ? plg::as_string(refPath) : refModuleName);
+				if (refModule.IsEmpty()) {
+					// With a custom resolver installed the specifier may still be
+					// resolvable dynamically, so report it as a plain miss rather
+					// than whatever require() happened to throw.
+					if (customResolver) {
+						_isolate->ThrowException(MakeImportError(context, "ERR_MODULE_NOT_FOUND",
+								std::format("Cannot find module '{}' imported from '{}'", refModuleName, referrer),
+								refModuleName, referrer));
+					} else {
+						ThrowException(std::format("Can not resolve '{}', import by '{}'", refModuleName, referrer));
+					}
+					return false;
 				}
-				return {};
-			}
 
-			info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, refModule.ToLocalChecked()));
+				info.resolveCache.emplace(refModuleName, v8::Global<v8::Module>(_isolate, refModule.ToLocalChecked()));
+			}
+			return true;
+		};
+
+		if (!fetchRequests()) {
+			_pathToModule.erase(path);
+			_idToModuleInfo.erase(infoIt);
+			return {};
 		}
 
 		return module;
@@ -4404,14 +4558,24 @@ namespace v8lm {
 		auto cJSValue = maybeRet.ToLocalChecked();
 		std::vector<v8::Local<v8::String>> exports = { v8::String::NewFromUtf8Literal(_isolate, "default") };
 
-		if (cJSValue->IsObject()) {
-			auto jsObject = cJSValue->ToObject(context).ToLocalChecked();
-			auto keys = jsObject->GetOwnPropertyNames(context).ToLocalChecked();
+		v8::Local<v8::Object> jsObject;
+		v8::Local<v8::Array> keys;
+		// Property access runs user code (getters, proxy traps), so every step here
+		// can throw and none of it may be ToLocalChecked().
+		if (cJSValue->IsObject() &&
+			cJSValue->ToObject(context).ToLocal(&jsObject) &&
+			jsObject->GetOwnPropertyNames(context).ToLocal(&keys)) {
 			exports.reserve(static_cast<size_t>(keys->Length()) + 1);
 			for (decltype(keys->Length()) i = 0; i < keys->Length(); ++i) {
 				v8::Local<v8::Value> key;
-				if (keys->Get(context, i).ToLocal(&key)) {
-					exports.emplace_back(key->ToString(context).ToLocalChecked());
+				v8::Local<v8::String> name;
+				if (keys->Get(context, i).ToLocal(&key) && key->ToString(context).ToLocal(&name)) {
+					// `exports.default` is common in transpiled CommonJS; a synthetic
+					// module may not declare the same export name twice.
+					if (name->StringEquals(exports.front())) {
+						continue;
+					}
+					exports.emplace_back(name);
 				}
 			}
 		}
@@ -4425,7 +4589,11 @@ namespace v8lm {
 					auto* self = Get(isolate);
 
 					const auto it = self->FindModuleInfo(module);
-					ASSERT(it != self->_idToModuleInfo.end());
+					if (it == self->_idToModuleInfo.end()) {
+						isolate->ThrowException(self->MakeImportError(context, "ERR_UNKNOWN_REFERRER",
+								"Synthetic module evaluated after its backing CommonJS value was released", {}, {}));
+						return {};
+					}
 					auto cJSValue = it->second.cJSValue.Get(isolate);
 
 					UNUSED(module->SetSyntheticModuleExport(isolate, v8::String::NewFromUtf8Literal(isolate, "default"), cJSValue));
@@ -4588,11 +4756,26 @@ namespace v8lm {
 			v8::Local<v8::FixedArray> importAttributes, v8::Local<v8::Module> referrer) {
 		v8::Isolate* isolate = context->GetIsolate();
 		auto* self = Get(isolate);
-		const auto it1 = self->FindModuleInfo(referrer);
-		ASSERT(it1 != self->_idToModuleInfo.end());
 		const std::string refModuleName = self->ToString(specifier);
+
+		// Both lookups below can miss on module graphs we did not build ourselves
+		// (a module handed to us by SetModuleResolver) or on a dependency that
+		// failed to fetch earlier, so they must throw rather than abort: this
+		// callback runs on behalf of plugin code.
+		const auto it1 = self->FindModuleInfo(referrer);
+		if (it1 == self->_idToModuleInfo.end()) {
+			isolate->ThrowException(self->MakeImportError(context, "ERR_UNKNOWN_REFERRER",
+					std::format("Cannot resolve '{}': the importing module is not tracked", refModuleName),
+					refModuleName, {}));
+			return {};
+		}
 		auto it2 = it1->second.resolveCache.find(refModuleName);
-		ASSERT(it2 != it1->second.resolveCache.end());
+		if (it2 == it1->second.resolveCache.end()) {
+			isolate->ThrowException(self->MakeImportError(context, "ERR_MODULE_NOT_FOUND",
+					std::format("Cannot resolve '{}': it was not resolved when the importing module was fetched", refModuleName),
+					refModuleName, {}));
+			return {};
+		}
 #if VERBOSE
 		PrintModuleExports(isolate, context, it2->second.Get(isolate));
 #endif
