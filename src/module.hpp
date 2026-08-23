@@ -224,16 +224,12 @@ namespace v8lm {
 
 		void ImportDynamic(const fs::path& path);
 
-		// Builds an Error carrying a Node-style `code` plus the `specifier`/`referrer`
-		// that failed, so `import()` rejections are inspectable from JS.
 		v8::Local<v8::Value> MakeImportError(v8::Local<v8::Context> context,
 											 std::string_view code,
 											 std::string_view message,
 											 std::string_view specifier,
 											 std::string_view referrer) const;
 
-		// Guarantees an exception is pending after a failed V8 call: keeps V8's own
-		// error when there is one, otherwise raises the described import error.
 		void RethrowOr(v8::Local<v8::Context> context,
 					   v8::TryCatch& tryCatch,
 					   std::string_view code,
@@ -251,7 +247,7 @@ namespace v8lm {
 		void ThrowTypeError(std::string_view error, v8::Local<v8::Value> value) const;
 		void ThrowTypeError(std::string_view error) const;
 		JsError FetchError(v8::Local<v8::Message> exception) const;
-		void LogError(v8::Local<v8::Message> exception) const;
+		std::string LogError(v8::Local<v8::Message> exception) const;
 		std::string LogError(v8::Local<v8::Message> exception, std::string_view name, std::string_view method) const;
 		void HandleUncaughtExceptionsInPromises();
 

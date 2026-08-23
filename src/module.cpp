@@ -2223,7 +2223,7 @@ namespace v8lm {
 			v8::Local<v8::Value> arg = (this->*convertFunc)(paramType, params, index);
 			if (arg.IsEmpty()) {
 				if (tryCatch.HasCaught()) {
-					LogError(tryCatch.Message());
+					UNUSED(LogError(tryCatch.Message()));
 				}
 				SetFallbackReturn(retType.GetType(), ret);
 				return;
@@ -2234,7 +2234,7 @@ namespace v8lm {
 		v8::Local<v8::Value> result;
 		if (!func.Get(_isolate)->Call(context, CreateJsObject(), static_cast<int>(paramsCount), args.data()).ToLocal(&result)) {
 			if (tryCatch.HasCaught()) {
-				LogError(tryCatch.Message());
+				UNUSED(LogError(tryCatch.Message()));
 			}
 			SetFallbackReturn(retType.GetType(), ret);
 			return;
@@ -2244,7 +2244,7 @@ namespace v8lm {
 			if (!result->IsArray()) {
 				ThrowTypeError("Expected array as return value", result);
 				if (tryCatch.HasCaught()) {
-					LogError(tryCatch.Message());
+					UNUSED(LogError(tryCatch.Message()));
 				}
 				SetFallbackReturn(retType.GetType(), ret);
 				return;
@@ -2254,7 +2254,7 @@ namespace v8lm {
 			if (resultArray->Length() != static_cast<uint32_t>(1 + refParamsCount)) {
 				ThrowRangeError(std::format("Returned array wrong size {}, expected {}", resultArray->Length(), 1 + refParamsCount));
 				if (tryCatch.HasCaught()) {
-					LogError(tryCatch.Message());
+					UNUSED(LogError(tryCatch.Message()));
 				}
 				SetFallbackReturn(retType.GetType(), ret);
 				return;
@@ -2270,7 +2270,7 @@ namespace v8lm {
 
 				if (!SetRefParam(resultArray->Get(context, 1 + k).ToLocalChecked(), paramType, params, index)) {
 					if (tryCatch.HasCaught()) {
-						LogError(tryCatch.Message());
+						UNUSED(LogError(tryCatch.Message()));
 						tryCatch.Reset();
 					}
 				}
@@ -2283,7 +2283,7 @@ namespace v8lm {
 		v8::Local<v8::Value> returnValue = refParamsCount != 0 ? result.As<v8::Array>()->Get(context, 0).ToLocalChecked() : result;
 		if (!SetReturn(returnValue, retType, ret)) {
 			if (tryCatch.HasCaught()) {
-				LogError(tryCatch.Message());
+				UNUSED(LogError(tryCatch.Message()));
 			}
 			SetFallbackReturn(retType.GetType(), ret);
 			return;
@@ -3183,17 +3183,20 @@ namespace v8lm {
 		MethodBindingHelper<&V8LanguageModule::LoadModule>::Bind(_isolate, context, global, v8::String::NewFromUtf8Literal(_isolate, "__plgjsLoadModule"), self);
 		MethodBindingHelper<&V8LanguageModule::FindModule>::Bind(_isolate, context, global, v8::String::NewFromUtf8Literal(_isolate, "__plgjsFindModule"), self);
 
-		[[maybe_unused]] auto _ = ExecuteModule(context, libPath, "pps.js");
+		Result<v8::Local<v8::Data>> ppsResult = ExecuteModule(context, libPath, "pps.js");
+		if (!ppsResult) {
+			return MakeError(std::move(ppsResult.error()));
+		}
 
 		_require.Reset(_isolate, pps->Get(context, v8::String::NewFromUtf8Literal(_isolate, "__require")).ToLocalChecked().As<v8::Function>());
 		_getESMMain.Reset(_isolate, pps->Get(context, v8::String::NewFromUtf8Literal(_isolate, "getESMMain")).ToLocalChecked().As<v8::Function>());
 
-		Result<v8::Local<v8::Data>> importResult = ExecuteModule(context, libPath, "plugify.mjs");
-		if (!importResult) {
-			return MakeError(std::move(importResult.error()));
+		Result<v8::Local<v8::Data>> plugifyResult = ExecuteModule(context, libPath, "plugify.mjs");
+		if (!plugifyResult) {
+			return MakeError(std::move(plugifyResult.error()));
 		}
 
-		v8::Local<v8::Module> plugifyModule = importResult->As<v8::Module>();
+		v8::Local<v8::Module> plugifyModule = plugifyResult->As<v8::Module>();
 		if (plugifyModule->GetStatus() == v8::Module::kErrored) {
 			return MakeError("Could not execute plugify.mjs module");
 		}
@@ -3294,7 +3297,7 @@ namespace v8lm {
 		v8::TryCatch tryCatch(_isolate);
 		_taskScheduler.Run();
 		if (tryCatch.HasCaught()) {
-			LogError(tryCatch.Message());
+			UNUSED(LogError(tryCatch.Message()));
 			tryCatch.Reset();
 		}
 
@@ -3758,7 +3761,7 @@ namespace v8lm {
         }
 
 		if (tryCatch.HasCaught()) {
-			[[maybe_unused]] auto _ = LogError(tryCatch.Message(), className, "bindClassMethods");
+			UNUSED(LogError(tryCatch.Message(), className, "bindClassMethods"));
 		}
 
         if (!result->IsFunction()) {
@@ -3954,15 +3957,15 @@ namespace v8lm {
 
 			v8::MaybeLocal<v8::Script> compiledScript = v8::Script::Compile(context, source, &origin);
 			if (compiledScript.IsEmpty()) {
-				LogError(tryCatch.Message());
-				return MakeError("Can not compile '{}': {}", moduleName, FetchError(tryCatch.Message()).message);
+				auto error = LogError(tryCatch.Message());
+				return MakeError("Can not compile '{}': {}", moduleName, error);
 			}
 
 			v8::Local<v8::Script> script = compiledScript.ToLocalChecked();
 			[[maybe_unused]] v8::MaybeLocal<v8::Value> returnVal = script->Run(context);
 			if (tryCatch.HasCaught()) {
-				LogError(tryCatch.Message());
-				return MakeError("Can not execute '{}': {}", moduleName, FetchError(tryCatch.Message()).message);
+				auto error = LogError(tryCatch.Message());
+				return MakeError("Can not execute '{}': {}", moduleName, error);
 			}
 
 			return script;
@@ -3988,17 +3991,17 @@ namespace v8lm {
 		// Every failure exits through here, so returning a module always means the
 		// resolver (when there is one) has been settled and the caller can stop
 		// worrying about it. `fallback` describes failures V8 left unexplained.
-		auto fail = [&](std::string_view fallback) -> v8::MaybeLocal<v8::Module> {
+		auto fail = [&](std::string fallback) -> v8::MaybeLocal<v8::Module> {
 			v8::Local<v8::Message> message = tryCatch.HasCaught() ? tryCatch.Message() : v8::Local<v8::Message>();
 			if (!message.IsEmpty()) {
-				LogError(message);
+				auto err = LogError(message);
 				if (error) {
-					*error = FetchError(message).message;
+					*error = std::move(err);
 				}
 			} else {
 				_logger->Log(std::format(LOG_PREFIX "{}", fallback), Severity::Error);
 				if (error) {
-					*error = std::string(fallback);
+					*error = std::move(fallback);
 				}
 			}
 			return {};
@@ -4159,7 +4162,7 @@ namespace v8lm {
 		auto* self = Get(isolate);
 		v8::Local<v8::Value> error = info[0];
 		v8::Local<v8::Message> message = MakeErrorMessage(isolate, error);
-		self->LogError(message);
+		UNUSED(self->LogError(message));
 	}
 
 	// static
@@ -4390,7 +4393,7 @@ namespace v8lm {
 		_failedPromises.swap(list);
 
 		for (const auto& [_, message] : list) {
-			LogError(message.Get(_isolate));
+			UNUSED(LogError(message.Get(_isolate)));
 		}
 	}
 
@@ -4829,9 +4832,10 @@ namespace v8lm {
 		return error;
 	}
 
-	void V8LanguageModule::LogError(v8::Local<v8::Message> exception) const {
+	std::string V8LanguageModule::LogError(v8::Local<v8::Message> exception) const {
 		auto [message, traceback] = FetchError(exception);
 		_logger->Log(std::format(LOG_PREFIX "{}", traceback.empty() ? message : traceback), Severity::Error);
+		return message;
 	}
 
 	std::string V8LanguageModule::LogError(v8::Local<v8::Message> exception, std::string_view name, std::string_view method) const {
