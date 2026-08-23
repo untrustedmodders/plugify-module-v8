@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.4...v2.3.5) (2026-08-23)
+
+
+### Bug Fixes
+
+* add missing mutex lock to task scheduler ([3dc8939](https://github.com/untrustedmodders/plugify-module-v8/commit/3dc8939a887239fc39bec1b1a5b00855f73e5766))
+* refactor logging a bit ([082503d](https://github.com/untrustedmodders/plugify-module-v8/commit/082503deae1fe236a24aca52652019c8b97ca3f1))
+* remove unused from win header ([23f1b26](https://github.com/untrustedmodders/plugify-module-v8/commit/23f1b2653d76c71f066b6ffc1bb73885af00f9bb))
+* report module load failures instead of aborting the process ([fc4c69a](https://github.com/untrustedmodders/plugify-module-v8/commit/fc4c69ad790cdfd63ed12e92dbb24e3482c25861))
+
 ## [2.3.4](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.3...v2.3.4) (2026-08-16)
 
 
