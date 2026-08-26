@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.6](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.5...v2.3.6) (2026-08-26)
+
+
+### Bug Fixes
+
+* improve enum creation ([8293c91](https://github.com/untrustedmodders/plugify-module-v8/commit/8293c91eef2ab1b87fa373b1990cd7b67328bffb))
+
 ## [2.3.5](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.4...v2.3.5) (2026-08-23)
 
 
