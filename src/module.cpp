@@ -3729,18 +3729,9 @@ namespace v8lm {
 		std::unordered_map<std::string, v8::Global<v8::Object>> exportClasses;
 	}
 
-	void V8LanguageModule::CreateEnumObject(const Property& paramType) {
-		if (const auto prototype = paramType.GetPrototype()) {
-			CreateEnumObject(*prototype);
-		}
-
-		const auto enumerator = paramType.GetEnumerate();
-		if (!enumerator) {
-			return;
-		}
-
-		const auto& enumName = enumerator->GetName();
-		const auto& values = enumerator->GetValues();
+	void V8LanguageModule::CreateEnumObject(const Enum& enumerator) {
+		const auto& enumName = enumerator.GetName();
+		const auto& values = enumerator.GetValues();
 		if (exportEnums.contains(enumName) || values.empty()) {
 			return;
 		}
@@ -3755,13 +3746,6 @@ namespace v8lm {
 
 		exportNames.emplace_back(MakeString(enumName));
 		exportEnums.emplace(enumName, v8::Global<v8::Object>(_isolate, object));
-	}
-
-	void V8LanguageModule::CreateEnumObject(const Method& method) {
-		CreateEnumObject(method.GetRetType());
-		for (const auto& paramType : method.GetParamTypes()) {
-			CreateEnumObject(paramType);
-		}
 	}
 
 	v8::Local<v8::Value> V8LanguageModule::ConvertAlias(const std::optional<Alias>& alias) {
@@ -3851,9 +3835,9 @@ namespace v8lm {
 		}
 	}
 
-	bool V8LanguageModule::CreateClassObject(const Class& classData) {
+	bool V8LanguageModule::CreateClassObject(const Class& klass) {
 		v8::Local<v8::Context> context = _isolate->GetCurrentContext();
-        const std::string& className = classData.GetName();
+        const std::string& className = klass.GetName();
 
 		// Create a new empty JavaScript class
 		v8::Local<v8::FunctionTemplate> classTpl = v8::FunctionTemplate::New(_isolate);
@@ -3865,7 +3849,7 @@ namespace v8lm {
 		}
 
         // Prepare constructors array
-        const auto& constructorNames = classData.GetConstructors();
+        const auto& constructorNames = klass.GetConstructors();
         v8::Local<v8::Array> constructors = v8::Array::New(_isolate, static_cast<int>(constructorNames.size()));
 
         for (size_t i = 0; i < constructorNames.size(); ++i) {
@@ -3880,7 +3864,7 @@ namespace v8lm {
 
         // Prepare destructor (can be null)
         v8::Local<v8::Value> destructor = v8::Null(_isolate);
-        const std::string& destructorName = classData.GetDestructor();
+        const std::string& destructorName = klass.GetDestructor();
         if (!destructorName.empty()) {
             auto dtorFunc = exportFuncs.find(destructorName);
         	if (dtorFunc != exportFuncs.end()) {
@@ -3892,7 +3876,7 @@ namespace v8lm {
         }
 
         // Prepare methods array
-        const auto& bindings = classData.GetBindings();
+        const auto& bindings = klass.GetBindings();
         v8::Local<v8::Array> methods = v8::Array::New(_isolate, static_cast<int>(bindings.size()));
 
         for (size_t i = 0; i < bindings.size(); ++i) {
@@ -3906,8 +3890,8 @@ namespace v8lm {
 
         // Prepare invalid value
         v8::Local<v8::Value> invalidValue = GetInvalidValueForType(
-            classData.GetHandleType(),
-            classData.GetInvalidValue()
+            klass.GetHandleType(),
+            klass.GetInvalidValue()
         );
 
         // Call bindClassMethods(cls, constructors, destructor, methods, invalidValue)
@@ -3969,8 +3953,8 @@ namespace v8lm {
 			exportFuncs.emplace(method.GetName(), v8::Global<v8::Object>(_isolate, func));
 		}
 
-		for (const auto& method : plugin.GetMethods()) {
-			CreateEnumObject(method);
+		for (const auto& enm : plugin.GetEnums()) {
+			CreateEnumObject(*enm);
 		}
 
 		for (const auto& cls : plugin.GetClasses()) {
@@ -3995,7 +3979,7 @@ namespace v8lm {
 						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), cls.Get(_isolate)));
 						g_v8lm.AddToObjectsVec(std::move(cls));
 					}
-					return { True(_isolate) };
+					return { v8::True(_isolate) };
 				}
 		);
 
@@ -4040,8 +4024,8 @@ namespace v8lm {
 			exportFuncs.emplace(method.GetName(), v8::Global<v8::Object>(_isolate, func));
 		}
 
-		for (const auto& method : plugin.GetMethods()) {
-			CreateEnumObject(method);
+		for (const auto& enm : plugin.GetEnums()) {
+			CreateEnumObject(*enm);
 		}
 
 		for (const auto& cls : plugin.GetClasses()) {
@@ -4066,7 +4050,7 @@ namespace v8lm {
 						UNUSED(module->SetSyntheticModuleExport(_isolate, g_v8lm.MakeString(name), cls.Get(_isolate)));
 						g_v8lm.AddToObjectsVec(std::move(cls));
 					}
-					return { True(_isolate) };
+					return { v8::True(_isolate) };
 				}
 		);
 

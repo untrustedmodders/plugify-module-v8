@@ -82,12 +82,11 @@ namespace v8lm {
 		Result<JsMethodData> GenerateMethodExport(const Method& method, v8::Local<v8::Context> context, v8::Local<v8::Object> exports);
 		v8::MaybeLocal<v8::Module> CreateInternalModule(const Extension& plugin);
 		v8::MaybeLocal<v8::Module> CreateExternalModule(const Extension& plugin);
-		void CreateEnumObject(const Property& paramType);
-		void CreateEnumObject(const Method& method);
+		void CreateEnumObject(const Enum& enumerator);
 		v8::Local<v8::Value> ConvertAlias(const std::optional<Alias>& alias);
 		v8::Local<v8::Array> ConvertBinding(const Binding& binding);
 		v8::Local<v8::Value> GetInvalidValueForType(ValueType type, std::string_view invalidValue);
-		bool CreateClassObject(const Class& classData);
+		bool CreateClassObject(const Class& klass);
 		v8::Local<v8::Function> FindJavascriptMethod(Address addr) const;
 		void AddToFunctionsMap(void* funcAddr, const JsFunction& funcObj);
 		void AddToObjectsVec(v8::Global<v8::Object>&& anyObj);
