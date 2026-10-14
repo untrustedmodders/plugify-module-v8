@@ -1,0 +1,57 @@
+context:
+  name: plugify-module-v8
+  version: ${{ env.get("PACKAGE_VERSION") }}
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  path: .
+  use_gitignore: false
+
+build:
+  number: 0
+  string: ${{ target_platform | replace("-", "_") }}
+  dynamic_linking:
+    missing_dso_allowlist:
+      - if: linux
+        then:
+          - "*/ld-linux*.so.*"
+          - "*/libc.so.*"
+          - "*/libm.so.*"
+          - "*/libdl.so.*"
+          - "*/libpthread.so.*"
+          - "*/librt.so.*"
+          - "*/libplugify.so*"
+          - "*/libv8.so*"
+          - "*/libv8*.so*"
+      - if: win
+        then:
+          - "*/plugify.dll"
+          - "*/v8.dll"
+          - "*/v8_icui18n.dll"
+          - "*/v8_icuuc.dll"
+          - "*/v8_libbase.dll"
+          - "*/v8_libplatform.dll"
+          - "*/v8_zlib.dll"
+          - "*/v8system.dll"
+
+requirements:
+  run:
+    - if: linux
+      then: __glibc >=2.26
+
+about:
+  homepage: https://github.com/${{ env.get("GITHUB_REPOSITORY", default="untrustedmodders/plugify-module-v8") }}
+  license: MIT
+  license_file: LICENSE
+  summary: "Adds support for JavaScript plugins"
+  description: |
+    Adds support for JavaScript plugins
+  documentation: https://github.com/${{ env.get("GITHUB_REPOSITORY", default="untrustedmodders/plugify-module-v8") }}/blob/main/README.md
+  repository: https://github.com/${{ env.get("GITHUB_REPOSITORY", default="untrustedmodders/plugify-module-v8") }}
+
+extra:
+  recipe-maintainers:
+    - ${{ env.get("GITHUB_ACTOR", default="untrustedmodders") }}
