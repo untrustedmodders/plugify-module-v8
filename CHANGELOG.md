@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.7](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.6...v2.3.7) (2026-10-14)
+
+
+### Bug Fixes
+
+* migrate conda packaging to rattler-build and update libs ([e7ec7ce](https://github.com/untrustedmodders/plugify-module-v8/commit/e7ec7ce0fcf7d5c7c86d5b127f4339b03ac64253))
+
 ## [2.3.6](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.5...v2.3.6) (2026-08-26)
 
 
