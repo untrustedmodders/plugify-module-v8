@@ -3168,10 +3168,13 @@ namespace v8lm {
 			BeginExternalCall(retType.GetType(), a);
 		}
 
+		std::vector<size_t> refStorageIndices;
+
 		for (size_t i = 0; i < paramCount; ++i) {
 			const Property& paramType = paramTypes[i];
 			if (paramType.IsRef()) {
 				++refParamsCount;
+				refStorageIndices.push_back(a.storage.size());
 			}
 			using PushParamFunc = decltype(&V8LanguageModule::PushObjectAsParam);
 			PushParamFunc const pushParamFunc = paramType.IsRef() ? &V8LanguageModule::PushObjectAsRefParam : &V8LanguageModule::PushObjectAsParam;
@@ -3195,13 +3198,13 @@ namespace v8lm {
 
 			resultArray->Set(context, k++, result).Check(); // retObj ref taken by array
 
-			for (size_t i = 0, j = hasHiddenParam; i < paramCount; ++i) {
+			for (size_t i = 0, j = 0; i < paramCount; ++i) {
 				const Property& paramType = paramTypes[i];
 				if (!paramType.IsRef()) {
 					continue;
 				}
 
-				v8::Local<v8::Value> ref = StorageValueToObject(paramType, a, j++);
+				v8::Local<v8::Value> ref = StorageValueToObject(paramType, a, refStorageIndices[j++]);
 				if (ref.IsEmpty()) {
 					// storeValueFunc sets error
 					return;
