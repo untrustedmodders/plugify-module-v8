@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.8](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.7...v2.3.8) (2026-11-04)
+
+
+### Bug Fixes
+
+* read ref parameters from their own storage slots in external calls ([229f6e2](https://github.com/untrustedmodders/plugify-module-v8/commit/229f6e2d404225e23dc255f3b8f4d70359814f9e))
+
 ## [2.3.7](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.6...v2.3.7) (2026-10-14)
 
 
