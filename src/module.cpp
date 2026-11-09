@@ -3258,7 +3258,7 @@ namespace v8lm {
 			v8::V8::SetFlagsFromString("--expose_gc");
 #endif
 			const fs::path icuDataPath = libPath / "icudtl.dat";
-			platform = v8::platform::NewDefaultPlatform();
+			platform.reset(v8::platform::V_NewDefaultPlatform());
 			if (!v8::V8::InitializeICUDefaultLocation(nullptr, fs::exists(icuDataPath, ec) ? plg::as_string(icuDataPath).c_str() : nullptr)) {
 				return MakeError("Failed to initialize the ICU library bundled with V8");
 			}

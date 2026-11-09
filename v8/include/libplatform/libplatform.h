@@ -50,6 +50,14 @@ V8_PLATFORM_EXPORT std::unique_ptr<v8::Platform> NewDefaultPlatform(
     PriorityMode priority_mode = PriorityMode::kDontApply);
 
 /**
+ * Valve's export: the same as NewDefaultPlatform(thread_pool_size) with
+ * default arguments, but returns a raw pointer, so no std:: types cross the
+ * library boundary (libv8_libplatform is built against its own libc++).
+ * The caller will take ownership of the returned pointer.
+ */
+V8_PLATFORM_EXPORT v8::Platform* V_NewDefaultPlatform(int thread_pool_size = 0);
+
+/**
  * The same as NewDefaultPlatform but disables the worker thread pool.
  * It must be used with the --single-threaded V8 flag.
  */
