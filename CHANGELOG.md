@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.9](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.8...v2.3.9) (2026-11-10)
+
+
+### Bug Fixes
+
+* add `V_NewDefaultPlatform` to export ([515c016](https://github.com/untrustedmodders/plugify-module-v8/commit/515c016f66d4ef4e09f7d3101aaa2a3a7d28a5ca))
+
 ## [2.3.8](https://github.com/untrustedmodders/plugify-module-v8/compare/v2.3.7...v2.3.8) (2026-11-04)
 
 
