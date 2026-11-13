@@ -20,6 +20,7 @@
 #include <plg/any.hpp>
 #include <plg/string.hpp>
 #include <plg/vector.hpp>
+#include <plg/flat.hpp>
 
 #include <v8.h>
 
@@ -293,7 +294,7 @@ namespace v8lm {
 			v8::Global<v8::Function> start;
 			v8::Global<v8::Function> end;
 		};
-		std::map<UniqueId, PluginData> _pluginsMap;
+		std::flat_map<UniqueId, PluginData> _pluginsMap;
 		std::vector<JsMethodData> _jsMethods;
 		std::vector<v8::Global<v8::Object>> _jsObjects;
 		struct JitHolder {
